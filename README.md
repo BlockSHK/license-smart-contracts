@@ -14,8 +14,8 @@ This project use hardhat framework.
 ## Quickstart
 
 ```
-gh repo clone Hithru/SampleManagmentSytem
-cd SampleManagmentSytem
+gh repo clone BlockSHK/license-smart-contracts
+cd BlockSHK/license-smart-contracts
 yarn install
 ```
 
