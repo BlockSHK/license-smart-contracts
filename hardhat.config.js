@@ -20,11 +20,15 @@ module.exports = {
     networks: {
         hardhat: {
             chainId: 31337,
+            // blockGasLimit: 60000000
             // gasPrice: 130000000000,
         },
         goerli: {
             url: GOERLI_RPC_URL,
-            accounts: [PRIVATE_KEY],
+            accounts: [
+                PRIVATE_KEY,
+                "5066cd290a3242f79203266229634d0c9a1ba328ca0d7c3c41343f0ff22dee76",
+            ],
             chainId: 5,
             blockConfirmations: 6,
         },
@@ -33,6 +37,12 @@ module.exports = {
         compilers: [
             {
                 version: "0.8.17",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 200,
+                    },
+                },
             },
             {
                 version: "0.6.6",
@@ -53,6 +63,10 @@ module.exports = {
         deployer: {
             default: 0, // here this will by default take the first account as deployer
             1: 0, // similarly on mainnet it will take the first account as deployer. Note though that depending on how hardhat network are configured, the account 0 on one network can be different than on another
+        },
+        secondPayer: {
+            default: 1,
+            1: 1,
         },
     },
     mocha: {
