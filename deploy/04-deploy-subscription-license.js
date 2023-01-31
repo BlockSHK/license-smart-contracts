@@ -6,10 +6,10 @@ const fs = require("fs")
 module.exports = async ({ getNamedAccounts, deployments }) => {
     const { deploy, log } = deployments
     const { deployer } = await getNamedAccounts()
-    let ethUsdPriceFeedAddress
+    let mapCoin = await deployments.get("MapCoin")
 
     let toAddress = "0x76eD2B384f9fA8649E7c15d324367f78515183aE"
-    let mapCoinAddress = await deployments.get("MapCoin")
+    let mapCoinAddress = mapCoin.address
     let licensePrice = "10"
     let periodSeconds = "60"
     let gasPrice = "1"
