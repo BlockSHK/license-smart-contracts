@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
-contract Subscription {
+contract SubscriptionLicense {
     using ECDSA for bytes32;
     using SafeMath for uint256;
 
@@ -19,7 +19,7 @@ contract Subscription {
     uint256 public requiredTokenAmount;
     uint256 public requiredPeriodSeconds;
     uint256 public requiredGasPrice;
-
+    string private i_licenseName;
     // similar to a nonce that avoids replay attacks this allows a single execution
     // every x seconds for a given subscription
     // subscriptionHash  => next valid block number
@@ -55,7 +55,8 @@ contract Subscription {
         address _tokenAddress,
         uint256 _tokenAmount,
         uint256 _periodSeconds,
-        uint256 _gasPrice
+        uint256 _gasPrice,
+        string memory licenseName
     ) {
         requiredToAddress=_toAddress;
         requiredTokenAddress=_tokenAddress;
@@ -63,6 +64,7 @@ contract Subscription {
         requiredPeriodSeconds=_periodSeconds;
         requiredGasPrice=_gasPrice;
         author=msg.sender;
+        i_licenseName = licenseName;
     }
 
     // this is used by external smart contracts to verify on-chain that a
