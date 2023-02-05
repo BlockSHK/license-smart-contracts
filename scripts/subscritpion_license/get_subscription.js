@@ -83,7 +83,7 @@ async function main() {
         subscriptionHash,
         signature
     )
-
+    console.log(`Sign Verify :- ${signerVerify}`)
     let isSubscriptionReady = await subscriptionLicense.isSubscriptionReady(
         fromAddress, //the subscriber
         toAddress, //the publisher
@@ -94,8 +94,21 @@ async function main() {
         nonce, // to allow multiple subscriptions with the same parameters
         signature
     )
-    console.log(isSubscriptionReady)
-    console.log(`Transfer Complete :- ${signerVerify}`)
+    console.log(`Is Subscription Ready :- ${isSubscriptionReady}`)
+    if (isSubscriptionReady) {
+        let executeSubscription = await subscriptionLicense.executeSubscription(
+            fromAddress, //the subscriber
+            toAddress, //the publisher
+            mapCoinAddress, //the token address paid to the publisher
+            licensePrice, //the token amount paid to the publisher
+            periodSeconds, //the period in seconds between payments
+            gasPrice, //the amount of tokens or eth to pay relayer (0 for free)
+            nonce, // to allow multiple subscriptions with the same parameters
+            signature
+        )
+        await executeSubscription.wait()
+        console.log("Subscription Executed")
+    }
 }
 
 main()
