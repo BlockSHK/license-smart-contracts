@@ -3,18 +3,18 @@ const { ethers, getNamedAccounts } = require("hardhat")
 async function main() {
     const { deployer, secondPayer } = await getNamedAccounts()
     const mapCoin = await ethers.getContract("MapCoin", deployer)
-
+    console.log(deployer)
     const subscriptionLicense = await ethers.getContract(
         "SubscriptionLicense",
         deployer
     )
 
     let wallet = new ethers.Wallet(
-        "c0c7fa3872dc6126898718a47ad6a0dc1c17ca0b8b0209213e0009bac8c2d66a"
+        "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
     )
 
     let toAddress = "0x76eD2B384f9fA8649E7c15d324367f78515183aE"
-    let fromAddress = "0xAa62006DcB8Ea5e90Ec241FA33768aa8c4887a34"
+    let fromAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
     let mapCoinAddress = mapCoin.address
     let licensePrice = "10"
     let periodSeconds = "60"
@@ -23,39 +23,46 @@ async function main() {
 
     console.log(`Got contract MapCoin at ${mapCoin.address}`)
 
-    const fromBalance = await mapCoin.balanceOf(fromAddress)
+    // const fromBalance = await mapCoin.balanceOf(fromAddress)
 
-    if (fromBalance.toNumber() <= 0) {
-        const transferAmount = "10000000"
-        const transactionResponse = await mapCoin.transfer(
-            fromAddress,
-            transferAmount
-        )
-        await transactionResponse.wait()
-    }
+    // if (fromBalance.toNumber() <= 0) {
+    //     const transferAmount = "10000000"
+    //     const transactionResponse = await mapCoin.transfer(
+    //         fromAddress,
+    //         transferAmount
+    //     )
+    //     await transactionResponse.wait()
+    // }
 
-    const approveAmount = await mapCoin.allowance(fromAddress, toAddress)
+    const approveAmount = await mapCoin.allowance(
+        fromAddress,
+        subscriptionLicense.address
+    )
 
     if (approveAmount.toNumber() <= 0) {
         const approveAmount = "1000"
-        const mapCoinNew = await ethers.getContract("MapCoin")
 
         console.log(`Got contract MapCoin at ${mapCoin.address}`)
         console.log(
-            `Approve ${approveAmount} token to address ${toAddress} for spend on behalf`
+            `Approve ${approveAmount} token to address ${subscriptionLicense.address} for spend on behalf`
         )
 
-        const transactionResponseApprove = await mapCoinNew.approve(
-            toAddress,
+        const transactionResponseApprove = await mapCoin.approve(
+            subscriptionLicense.address,
             approveAmount
         )
 
         await transactionResponseApprove.wait()
     }
 
-    const approveAmountFinal = await mapCoin.allowance(fromAddress, toAddress)
+    const approveAmountFinal = await mapCoin.allowance(
+        fromAddress,
+        subscriptionLicense.address
+    )
     console.log(
-        `Approve amount from ${fromAddress}  to address ${toAddress} is ${approveAmountFinal.toNumber()}`
+        `Approve amount from ${fromAddress}  to address ${
+            subscriptionLicense.address
+        } is ${approveAmountFinal.toNumber()}`
     )
 
     const subscriptionHash = await subscriptionLicense.getSubscriptionHash(
