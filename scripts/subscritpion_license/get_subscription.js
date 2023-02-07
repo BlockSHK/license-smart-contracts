@@ -1,6 +1,12 @@
 const { ethers, getNamedAccounts } = require("hardhat")
 
 async function main() {
+    const sevenDays = 7 * 24 * 60 * 60
+    const oneMinute = 60
+
+    await ethers.provider.send("evm_increaseTime", [oneMinute])
+    await ethers.provider.send("evm_mine")
+
     const { deployer, secondPayer } = await getNamedAccounts()
     const mapCoin = await ethers.getContract("MapCoin", deployer)
     console.log(deployer)
