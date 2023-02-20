@@ -3,7 +3,7 @@ const { ethers, getNamedAccounts } = require("hardhat")
 async function main() {
     const { deployer } = await getNamedAccounts()
     const toAddress = "0x76eD2B384f9fA8649E7c15d324367f78515183aE"
-    const transferAmount = "10000000000000"
+    const transferAmount = "10000000"
     const mapCoin = await ethers.getContract("MapCoin", deployer)
 
     console.log(`Got contract MapCoin at ${mapCoin.address}`)

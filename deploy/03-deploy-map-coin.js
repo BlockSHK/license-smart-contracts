@@ -26,4 +26,4 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     }
 }
 
-module.exports.tags = ["all", "mapCoin"]
+module.exports.tags = ["all", "mapCoin", "subscription"]
