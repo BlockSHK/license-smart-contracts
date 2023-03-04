@@ -7,21 +7,15 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     const { deploy, log } = deployments
     const { deployer } = await getNamedAccounts()
     const chainId = network.config.chainId
-    let ethUsdPriceFeedAddress
 
-    if (chainId == 31337) {
-        // Find ETH/USD price feed
-        const EthUsdAggregator = await deployments.get("MockV3Aggregator")
-        ethUsdPriceFeedAddress = EthUsdAggregator.address
-    } else {
-        ethUsdPriceFeedAddress = networkConfig[chainId].ethUsdPriceFeed
-    }
     let licensePrice = "10000000000000000" //0.01 ETH
-    let companyName = "Microsoft"
+    let companyName = "Google"
+    let licenseName = "Google-bard-perpetual"
+    let royaltyPercentage = "1" //1%
 
     log("----------------------------------------------------")
-    arguments = [ethUsdPriceFeedAddress, licensePrice, companyName]
-    const tokenLicense = await deploy("TokenLicense", {
+    arguments = [companyName, licenseName, licensePrice, royaltyPercentage]
+    const tokenLicense = await deploy("PerpetualLicense", {
         from: deployer,
         args: arguments,
         log: true,

@@ -19,7 +19,9 @@
     "typechain": "^8.1.0"
   },
   "dependencies": {
+    "@openzeppelin/contracts": "^4.8.2",
     "base64-sol": "^1.1.0",
-    "dotenv": "^16.0.3"
+    "dotenv": "^16.0.3",
+    "openzeppelin-solidity": "openzeppelin/openzeppelin-contracts"
   }
 }
