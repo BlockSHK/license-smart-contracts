@@ -99,6 +99,7 @@ contract PerpetualLicense is ERC721Royalty,Ownable{
     }
 
     function updateLicensePrice(uint256 newPrice) public onlyOwner {
+        require(newPrice > 0, "Price must be greater than zero");
         s_licensePrice = newPrice;
     }
 }
