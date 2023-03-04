@@ -12,7 +12,7 @@ error ERC721Metadata__URI_QueryFor_NonExistentToken();
 error SubscriptionLicense__TransferFailed();
 error SubscriptionLicense__NeedMoreETHSent();
 
-contract PerpetualLicense is ERC721,Ownable{
+contract FixedSubscriptionLicense is ERC721,Ownable{
     using SafeMath for uint256;
 
     uint256 private s_tokenCounter;
@@ -47,11 +47,13 @@ contract PerpetualLicense is ERC721,Ownable{
         if (msg.value < s_licensePrice) {
             revert SubscriptionLicense__NeedMoreETHSent();
         }
+
+        transferingAllowed[s_tokenCounter] = 1;
         _safeMint(msg.sender, s_tokenCounter);
 
         expirationTimestamp[s_tokenCounter] = block.timestamp.add(i_periodSecond);
         expirationTimestamp[s_tokenCounter] = 0;
-
+        transferingAllowed[s_tokenCounter] = 0;
         s_tokenCounter = s_tokenCounter + 1;
         emit CreatedSubscriptionToken(s_tokenCounter, s_licensePrice);
     }
