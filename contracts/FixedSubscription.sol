@@ -9,8 +9,8 @@ import "hardhat/console.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 error ERC721Metadata__URI_QueryFor_NonExistentToken();
-error PerpetualLicense__TransferFailed();
-error PerpetualLicense__NeedMoreETHSent();
+error SubscriptionLicense__TransferFailed();
+error SubscriptionLicense__NeedMoreETHSent();
 
 contract PerpetualLicense is ERC721,Ownable{
     using SafeMath for uint256;
@@ -25,7 +25,8 @@ contract PerpetualLicense is ERC721,Ownable{
     mapping(uint256 => uint256) public expirationTimestamp;
     mapping(uint256 => uint256) public transferingAllowed;
 
-    event CreatedLicenseToken(uint256 indexed tokenId, uint256 licensePrice);
+    event CreatedSubscriptionToken(uint256 indexed tokenId, uint256 licensePrice);
+    event UpdatedSubscriptionToken(uint256 indexed tokenId, uint256 licensePrice);
 
     constructor(
         string memory companyName,
@@ -44,7 +45,7 @@ contract PerpetualLicense is ERC721,Ownable{
 
     function mintToken() public payable  {
         if (msg.value < s_licensePrice) {
-            revert PerpetualLicense__NeedMoreETHSent();
+            revert SubscriptionLicense__NeedMoreETHSent();
         }
         _safeMint(msg.sender, s_tokenCounter);
 
@@ -52,9 +53,18 @@ contract PerpetualLicense is ERC721,Ownable{
         expirationTimestamp[s_tokenCounter] = 0;
 
         s_tokenCounter = s_tokenCounter + 1;
-        emit CreatedLicenseToken(s_tokenCounter, s_licensePrice);
+        emit CreatedSubscriptionToken(s_tokenCounter, s_licensePrice);
     }
 
+
+    function updateSubscription(uint256 tokenId) public payable {
+        if (msg.value < s_licensePrice) {
+            revert SubscriptionLicense__NeedMoreETHSent();
+        }
+
+        expirationTimestamp[tokenId] = block.timestamp.add(i_periodSecond);
+        emit UpdatedSubscriptionToken(s_tokenCounter, s_licensePrice);
+    }
 
 
     function _baseURI() internal pure override returns (string memory) {
@@ -102,19 +112,35 @@ contract PerpetualLicense is ERC721,Ownable{
         return s_licensePrice ;
     }
 
+    function getSubscritptionTimePeriod() public view returns (uint256) {
+        return i_periodSecond ;
+    }
+
+    function getExpirationTime(uint256 tokenId) public view returns (uint256) {
+        return expirationTimestamp[tokenId];
+    }
+
+    function isSubscriptionActive(uint256 tokenId) public view returns (bool) {
+        return (block.timestamp < expirationTimestamp[tokenId]);
+    }
+
     function withdraw() public onlyOwner {
         uint256 amount = address(this).balance;
         (bool success, ) = payable(msg.sender).call{value: amount}("");
         if (!success) {
-            revert PerpetualLicense__TransferFailed();
+            revert SubscriptionLicense__TransferFailed();
         }
+    }
+    function _beforeTokenTransfer(address from, address to, uint256 firsTokenId, uint256 batchSize) internal virtual override {
+        require(transferingAllowed[firsTokenId] == 1 , "Prior Approval needed for transfer of the tokens");
+        super._beforeTokenTransfer(from, to, firsTokenId,batchSize);
     }
 
     function transferFrom(address from, address to, uint256 tokenId) public virtual override {
         require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721: transfer caller is not owner nor approved");
         require(_exists(tokenId), "ERC721: nonexistent token");
 
-        _beforeTokenTransfer(from, to, tokenId);
+        _beforeTokenTransfer(from, to, tokenId,1);
 
         // clear approval
         _approve(address(0), tokenId);
@@ -125,10 +151,7 @@ contract PerpetualLicense is ERC721,Ownable{
         super._transfer(from, to, tokenId);
     }
 
-    function _beforeTokenTransfer(address from, address to, uint256 tokenId) internal virtual override {
-        require(transferingAllowed[tokenId] == 1 , "Prior Approval needed for transfer of the tokens");
-        super._beforeTokenTransfer(from, to, tokenId);
-    }
+
 
     function updateLicensePrice(uint256 newPrice) public onlyOwner {
         s_licensePrice = newPrice;
@@ -141,4 +164,12 @@ contract PerpetualLicense is ERC721,Ownable{
     function restrictTransfer(uint256 tokenId) public onlyOwner {
         transferingAllowed[tokenId] = 0;
     }
+
+    function getRefundEligible(uint256 tokenId, uint256 timestamp)  public view returns (bool) {
+        if(timestamp >= expirationTimestamp[tokenId]){
+          return false;
+        }
+        return true;
+    }
+
 }
