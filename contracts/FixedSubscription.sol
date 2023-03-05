@@ -63,9 +63,12 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
         if (msg.value < s_licensePrice) {
             revert SubscriptionLicense__NeedMoreETHSent();
         }
-
-        expirationTimestamp[tokenId] = block.timestamp.add(i_periodSecond);
-        emit UpdatedSubscriptionToken(s_tokenCounter, s_licensePrice);
+        if (block.timestamp < expirationTimestamp[tokenId]){
+            expirationTimestamp[tokenId] = expirationTimestamp[tokenId].add(i_periodSecond);  
+        }else{
+            expirationTimestamp[tokenId] = block.timestamp.add(i_periodSecond);
+        }
+        emit UpdatedSubscriptionToken(tokenId, s_licensePrice);
     }
 
 
@@ -167,11 +170,17 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
         transferingAllowed[tokenId] = 0;
     }
 
+    function cancelSubscription(uint256 tokenId) public onlyOwner {
+        expirationTimestamp[tokenId] = block.timestamp;
+    }
+    
     function getRefundEligible(uint256 tokenId, uint256 timestamp)  public view returns (bool) {
         if(timestamp >= expirationTimestamp[tokenId]){
           return false;
         }
         return true;
     }
+
+    
 
 }
