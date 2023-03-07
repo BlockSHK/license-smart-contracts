@@ -52,7 +52,6 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
         _safeMint(msg.sender, s_tokenCounter);
 
         expirationTimestamp[s_tokenCounter] = block.timestamp.add(i_periodSecond);
-        expirationTimestamp[s_tokenCounter] = 0;
         transferingAllowed[s_tokenCounter] = 0;
         s_tokenCounter = s_tokenCounter + 1;
         emit CreatedSubscriptionToken(s_tokenCounter, s_licensePrice);
@@ -96,7 +95,7 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
                                 i_licenseType,
                                 '","price":"',
                                 Strings.toString(s_licensePrice),
-                                '","price":"',
+                                '","start timestamp":"',
                                 Strings.toString(block.timestamp),
                                 '","tokenID":"',
                                 Strings.toString(tokenId),
@@ -159,6 +158,7 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
 
 
     function updateLicensePrice(uint256 newPrice) public onlyOwner {
+        require(newPrice > 0, "Price must be greater than zero");
         s_licensePrice = newPrice;
     }
 
