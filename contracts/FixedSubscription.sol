@@ -52,7 +52,6 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
         _safeMint(msg.sender, s_tokenCounter);
 
         expirationTimestamp[s_tokenCounter] = block.timestamp.add(i_periodSecond);
-        expirationTimestamp[s_tokenCounter] = 0;
         transferingAllowed[s_tokenCounter] = 0;
         s_tokenCounter = s_tokenCounter + 1;
         emit CreatedSubscriptionToken(s_tokenCounter, s_licensePrice);
@@ -63,9 +62,12 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
         if (msg.value < s_licensePrice) {
             revert SubscriptionLicense__NeedMoreETHSent();
         }
-
-        expirationTimestamp[tokenId] = block.timestamp.add(i_periodSecond);
-        emit UpdatedSubscriptionToken(s_tokenCounter, s_licensePrice);
+        if (block.timestamp < expirationTimestamp[tokenId]){
+            expirationTimestamp[tokenId] = expirationTimestamp[tokenId].add(i_periodSecond);  
+        }else{
+            expirationTimestamp[tokenId] = block.timestamp.add(i_periodSecond);
+        }
+        emit UpdatedSubscriptionToken(tokenId, s_licensePrice);
     }
 
 
@@ -93,7 +95,7 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
                                 i_licenseType,
                                 '","price":"',
                                 Strings.toString(s_licensePrice),
-                                '","price":"',
+                                '","start timestamp":"',
                                 Strings.toString(block.timestamp),
                                 '","tokenID":"',
                                 Strings.toString(tokenId),
@@ -156,6 +158,7 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
 
 
     function updateLicensePrice(uint256 newPrice) public onlyOwner {
+        require(newPrice > 0, "Price must be greater than zero");
         s_licensePrice = newPrice;
     }
 
@@ -167,11 +170,17 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
         transferingAllowed[tokenId] = 0;
     }
 
+    function cancelSubscription(uint256 tokenId) public onlyOwner {
+        expirationTimestamp[tokenId] = block.timestamp;
+    }
+    
     function getRefundEligible(uint256 tokenId, uint256 timestamp)  public view returns (bool) {
         if(timestamp >= expirationTimestamp[tokenId]){
           return false;
         }
         return true;
     }
+
+    
 
 }

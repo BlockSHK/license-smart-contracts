@@ -12,13 +12,6 @@ describe("PerpetualLicense", async function () {
         )
     })
 
-    // describe("constructor", function () {
-    //     it("sets the aggregator addresses correctly", async () => {
-    //         const response = await licenseFactory.getPriceFeed()
-    //         assert.equal(response, mockV3Aggregator.address)
-    //     })
-    // })
-
     describe("mintToken", async function () {
         it("should revert if sender doesn't send enough ETH", async () => {
             const licensePrice = await perpetualLicense.getLicensePrice()
@@ -119,41 +112,63 @@ describe("PerpetualLicense", async function () {
             ).to.be.rejectedWith("Ownable: caller is not the owner")
         })
 
-        // it("should transfer ether to the owner's address when called by the owner", async () => {
-        //     const accounts = await ethers.getSigners()
-        //     const perpetualLicenseContractSecondPayer =
-        //         await perpetualLicense.connect(accounts[1])
-        //     const licensePrice =
-        //         await perpetualLicenseContractSecondPayer.getLicensePrice()
-        //     const tokenId =
-        //         await perpetualLicenseContractSecondPayer.getTokenCounter()
-        //     await expect(
-        //         perpetualLicenseContractSecondPayer.mintToken({
-        //             value: licensePrice,
-        //         })
-        //     )
-        //         .to.emit(
-        //             perpetualLicenseContractSecondPayer,
-        //             "CreatedLicenseToken"
-        //         )
-        //         .withArgs(tokenId.toNumber() + 1, licensePrice)
-        //     const { deployer, secondPayer } = await getNamedAccounts()
-        //     const ownerBalanceBefore = await ethers.provider.getBalance(
-        //         deployer
-        //     )
-        //     console.log("owner balance before:", ownerBalanceBefore.toString())
-        //     await perpetualLicense.withdraw()
-        //     const ownerBalanceAfter = await ethers.provider.getBalance(deployer)
-        //     console.log("owner balance after:", ownerBalanceAfter.toString())
-        //     const gasCost = await await await ethers.provider.getGasPrice() // gas cost for a basic transaction
-        //     const expectedBalance = ownerBalanceBefore
-        //         .add(licensePrice)
-        //         .sub(gasCost)
+        it("should transfer ether to the owner's address when called by the owner", async () => {
+            const accounts = await ethers.getSigners()
+            const perpetualLicenseContractSecondPayer =
+                await perpetualLicense.connect(accounts[1])
+            const licensePrice =
+                await perpetualLicenseContractSecondPayer.getLicensePrice()
+            const tokenId =
+                await perpetualLicenseContractSecondPayer.getTokenCounter()
+            await expect(
+                perpetualLicenseContractSecondPayer.mintToken({
+                    value: licensePrice,
+                })
+            )
+                .to.emit(
+                    perpetualLicenseContractSecondPayer,
+                    "CreatedLicenseToken"
+                )
+                .withArgs(tokenId.toNumber() + 1, licensePrice)
+            const { deployer, secondPayer } = await getNamedAccounts()
+            const ownerBalanceBefore = await ethers.provider.getBalance(
+                deployer
+            )
+            // console.log(
+            //     "owner balance before:",
+            //     ethers.utils.formatEther(ownerBalanceBefore)
+            // )
+            const withdrawingAmount = await ethers.provider.getBalance(
+                perpetualLicense.address
+            )
+            // console.log(
+            //     "withdrawing amount",
+            //     ethers.utils.formatEther(withdrawingAmount)
+            // )
+            const transactionResponse = await perpetualLicense.withdraw()
+            const receipt = await transactionResponse.wait()
+            // console.log(receipt)
+            // console.log(
+            //     "total ether spent on gas for transaction: \t",
+            //     ethers.utils.formatEther(
+            //         receipt.gasUsed.mul(receipt.effectiveGasPrice)
+            //     )
+            // )
 
-        //     console.log("Gas Cost:", gasCost.toString())
-        //     console.log("expected balance:", expectedBalance.toString())
+            const ownerBalanceAfter = await ethers.provider.getBalance(deployer)
+            // console.log(
+            //     "owner balance after:",
+            //     ethers.utils.formatEther(ownerBalanceAfter)
+            // )
+            const gasCost = await ethers.provider.getGasPrice() // gas cost for a basic transaction
+            const expectedBalance = ownerBalanceBefore
+                .add(withdrawingAmount)
+                .sub(receipt.gasUsed.mul(receipt.effectiveGasPrice))
 
-        //     expect(ownerBalanceAfter).to.equal(expectedBalance)
-        // })
+            // console.log("Gas Cost:", ethers.utils.formatEther(gasCost))
+            // console.log("expected balance:", expectedBalance.toString())
+
+            expect(ownerBalanceAfter).to.equal(expectedBalance)
+        })
     })
 })
