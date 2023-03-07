@@ -111,6 +111,31 @@ describe("FixedSubscriptionLicense", async function () {
         })
     })
 
+    describe("isSubscriptionActive", async function () {
+        it("should return true since the current time is less than expiration time", async () => {
+            const accounts = await ethers.getSigners()
+            const fixedSubscriptionLicenseContractSecondPayer =
+                await fixedSubscription.connect(accounts[1])
+            const licensePrice =
+                await fixedSubscriptionLicenseContractSecondPayer.getLicensePrice()
+            const tokenId =
+                await fixedSubscriptionLicenseContractSecondPayer.getTokenCounter()
+            await expect(
+                fixedSubscriptionLicenseContractSecondPayer.mintToken({
+                    value: licensePrice,
+                })
+            )
+                .to.emit(
+                    fixedSubscriptionLicenseContractSecondPayer,
+                    "CreatedSubscriptionToken"
+                )
+                .withArgs(tokenId.toNumber() + 1, licensePrice)
+
+            const subscriptionActive =
+                await fixedSubscription.isSubscriptionActive(tokenId)
+            expect(subscriptionActive).to.be.true
+        })
+    })
     describe("getSubscritptionTimePeriod", async function () {
         it("should return the correct expiration time", async () => {
             const expirationTime =
