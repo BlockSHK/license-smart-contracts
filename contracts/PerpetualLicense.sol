@@ -45,7 +45,12 @@ contract PerpetualLicense is ERC721Royalty,Ownable{
         emit CreatedLicenseToken(s_tokenCounter, s_licensePrice);
     }
 
+    function mintToken(address customer) public onlyOwner  {
 
+        _safeMint(customer, s_tokenCounter);
+        s_tokenCounter = s_tokenCounter + 1;
+        emit CreatedLicenseToken(s_tokenCounter, s_licensePrice);
+    }
 
     function _baseURI() internal pure override returns (string memory) {
         return "data:application/json;base64,";

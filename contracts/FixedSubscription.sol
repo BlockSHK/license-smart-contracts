@@ -57,6 +57,16 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
         emit CreatedSubscriptionToken(s_tokenCounter, s_licensePrice);
     }
 
+    function mintToken(address customer) public onlyOwner {
+
+        transferingAllowed[s_tokenCounter] = 1;
+        _safeMint(customer, s_tokenCounter);
+
+        expirationTimestamp[s_tokenCounter] = block.timestamp.add(i_periodSecond);
+        transferingAllowed[s_tokenCounter] = 0;
+        s_tokenCounter = s_tokenCounter + 1;
+        emit CreatedSubscriptionToken(s_tokenCounter, s_licensePrice);
+    }
 
     function updateSubscription(uint256 tokenId) public payable {
         if (msg.value < s_licensePrice) {
