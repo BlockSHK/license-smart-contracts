@@ -36,7 +36,7 @@ contract PerpetualLicense is ERC721Royalty,Ownable{
     }
 
 
-    function mintToken() public payable  {
+    function buyToken() public payable  {
         if (msg.value < s_licensePrice) {
             revert PerpetualLicense__NeedMoreETHSent();
         }

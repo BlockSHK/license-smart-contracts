@@ -14,7 +14,7 @@ async function main() {
 
     console.log("Buying a Fixed Subscription License Token...")
 
-    const transactionResponse = await fixedSubscriptionlLicense.mintToken({
+    const transactionResponse = await fixedSubscriptionlLicense.buyToken({
         value: ethers.utils.parseEther("0.1"),
     })
 

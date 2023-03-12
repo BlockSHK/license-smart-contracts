@@ -43,7 +43,7 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
     }
 
 
-    function mintToken() public payable  {
+    function buyToken() public payable  {
         if (msg.value < s_licensePrice) {
             revert SubscriptionLicense__NeedMoreETHSent();
         }
@@ -138,6 +138,9 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
         return (block.timestamp < expirationTimestamp[tokenId]);
     }
 
+    function isTransferAllowed(uint256 tokenId) public view returns (bool) {
+        return (transferingAllowed[tokenId]==1);
+    }
     function withdraw() public onlyOwner {
         uint256 amount = address(this).balance;
         (bool success, ) = payable(msg.sender).call{value: amount}("");

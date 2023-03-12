@@ -12,18 +12,18 @@ describe("PerpetualLicense", async function () {
         )
     })
 
-    describe("mintToken", async function () {
+    describe("buyToken", async function () {
         it("should revert if sender doesn't send enough ETH", async () => {
             const licensePrice = await perpetualLicense.getLicensePrice()
             const insufficientEth = licensePrice.sub(1)
-            await expect(perpetualLicense.mintToken({ value: insufficientEth }))
+            await expect(perpetualLicense.buyToken({ value: insufficientEth }))
                 .to.be.revertedWithCustomError
         })
 
         it("should mint a new token if sender sends enough ETH", async () => {
             const licensePrice = await perpetualLicense.getLicensePrice()
             const tokenId = await perpetualLicense.getTokenCounter()
-            await expect(perpetualLicense.mintToken({ value: licensePrice }))
+            await expect(perpetualLicense.buyToken({ value: licensePrice }))
                 .to.emit(perpetualLicense, "CreatedLicenseToken")
                 .withArgs(tokenId + 1, licensePrice)
         })
@@ -31,7 +31,7 @@ describe("PerpetualLicense", async function () {
         it("should update the tokenCounter when a new token is minted", async () => {
             const licensePrice = await perpetualLicense.getLicensePrice()
             const tokenIdBefore = await perpetualLicense.getTokenCounter()
-            await perpetualLicense.mintToken({ value: licensePrice })
+            await perpetualLicense.buyToken({ value: licensePrice })
             const tokenIdAfter = await perpetualLicense.getTokenCounter()
             expect(tokenIdAfter).to.equal(tokenIdBefore.add(1))
         })
@@ -40,7 +40,7 @@ describe("PerpetualLicense", async function () {
             const licensePrice = await perpetualLicense.getLicensePrice()
 
             const tokenIdBefore = await perpetualLicense.getTokenCounter()
-            const contractTx = await perpetualLicense.mintToken({
+            const contractTx = await perpetualLicense.buyToken({
                 value: licensePrice,
             })
 
@@ -99,7 +99,7 @@ describe("PerpetualLicense", async function () {
 
     describe("withdraw", function () {
         beforeEach(async () => {
-            await perpetualLicense.mintToken({ value: sendValue })
+            await perpetualLicense.buyToken({ value: sendValue })
         })
 
         it("Only allows the owner to withdraw", async function () {
@@ -121,7 +121,7 @@ describe("PerpetualLicense", async function () {
             const tokenId =
                 await perpetualLicenseContractSecondPayer.getTokenCounter()
             await expect(
-                perpetualLicenseContractSecondPayer.mintToken({
+                perpetualLicenseContractSecondPayer.buyToken({
                     value: licensePrice,
                 })
             )
