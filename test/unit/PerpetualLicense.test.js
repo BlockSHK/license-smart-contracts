@@ -97,6 +97,49 @@ describe("PerpetualLicense", async function () {
         })
     })
 
+    describe("Transfer License", async function () {
+        it("Transfer the license token", async () => {
+            const accounts = await ethers.getSigners()
+            const perpetualLicenseContractSecondPayer =
+                await perpetualLicense.connect(accounts[1])
+            const licensePrice =
+                await perpetualLicenseContractSecondPayer.getLicensePrice()
+            const tokenId =
+                await perpetualLicenseContractSecondPayer.getTokenCounter()
+
+            // Buy the token
+            await expect(
+                perpetualLicenseContractSecondPayer.buyToken({
+                    value: licensePrice,
+                })
+            )
+                .to.emit(
+                    perpetualLicenseContractSecondPayer,
+                    "CreatedLicenseToken"
+                )
+                .withArgs(tokenId.toNumber() + 1, licensePrice)
+
+            // Transfer the token
+            await perpetualLicenseContractSecondPayer[
+                "safeTransferFrom(address,address,uint256)"
+            ](accounts[1].address, accounts[2].address, tokenId)
+
+            // Expect that the transfer has happened correctly
+            expect(
+                await perpetualLicenseContractSecondPayer.balanceOf(
+                    accounts[1].address
+                )
+            ).to.equal(0)
+            expect(
+                await perpetualLicenseContractSecondPayer.balanceOf(
+                    accounts[2].address
+                )
+            ).to.equal(1)
+            expect(
+                await perpetualLicenseContractSecondPayer.ownerOf(tokenId)
+            ).to.equal(accounts[2].address)
+        })
+    })
     describe("withdraw", function () {
         beforeEach(async () => {
             await perpetualLicense.buyToken({ value: sendValue })
