@@ -8,7 +8,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     const { deployer } = await getNamedAccounts()
     let mapCoin = await deployments.get("MapCoin")
 
-    let toAddress = "0x76eD2B384f9fA8649E7c15d324367f78515183aE"
+    let toAddress = deployer
     let mapCoinAddress = mapCoin.address
     let licensePrice = "10"
     let periodSeconds = "60"

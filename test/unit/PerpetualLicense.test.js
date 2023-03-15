@@ -139,6 +139,20 @@ describe("PerpetualLicense", async function () {
                 await perpetualLicenseContractSecondPayer.ownerOf(tokenId)
             ).to.equal(accounts[2].address)
         })
+
+        it("Fails to transfer a non-existent token", async () => {
+            const accounts = await ethers.getSigners()
+            const perpetualLicenseContractSecondPayer =
+                await perpetualLicense.connect(accounts[1])
+            const invalidTokenId = 999 // An invalid token ID
+
+            // Expect that transferring a non-existent token fails with an error
+            await expect(
+                perpetualLicenseContractSecondPayer[
+                    "safeTransferFrom(address,address,uint256)"
+                ](accounts[1].address, accounts[2].address, invalidTokenId)
+            ).to.be.revertedWith("ERC721: invalid token ID")
+        })
     })
     describe("withdraw", function () {
         beforeEach(async () => {
