@@ -139,6 +139,180 @@ describe("AutoRenewSubscriptionLicense", async function () {
                     nonce
                 )
         })
+
+        it("new subscription request should failed if signer is not the subscriber", async () => {
+            const oneMinute = 60
+            await ethers.provider.send("evm_increaseTime", [oneMinute])
+            await ethers.provider.send("evm_mine")
+
+            const { deployer, secondPayer } = await getNamedAccounts()
+            const mapCoin = await ethers.getContract("MapCoin", deployer)
+
+            const subscriptionLicense = await ethers.getContract(
+                "SubscriptionLicense",
+                deployer
+            )
+
+            const accounts = await ethers.getSigners()
+
+            let toAddress = await subscriptionLicense.getRequiredToAddress()
+            let fromAddress = accounts[1].address
+            let mapCoinAddress =
+                await subscriptionLicense.getRequiredTokenAddress()
+            let licensePrice =
+                await subscriptionLicense.getRequiredTokenAmount()
+            let periodSeconds =
+                await subscriptionLicense.getRequiredPeriodSeconds()
+            let gasPrice = await subscriptionLicense.getRequiredGasPrice()
+            let nonce = 1
+
+            const fromBalance = await mapCoin.balanceOf(fromAddress)
+            expect(fromBalance).to.equal(0)
+            if (fromBalance.toNumber() <= 0) {
+                const transferAmount = "10000000"
+                const transactionResponse = await mapCoin.transfer(
+                    fromAddress,
+                    transferAmount
+                )
+                await transactionResponse.wait()
+            }
+
+            expect((await mapCoin.balanceOf(fromAddress)).toNumber()).to.equal(
+                10000000
+            )
+            const approveAmount = await mapCoin.allowance(
+                fromAddress,
+                subscriptionLicense.address
+            )
+            expect(approveAmount).to.equal(0)
+            if (approveAmount.toNumber() <= 0) {
+                const approveAmount = "1000"
+                const mapCoinFrom = await ethers.getContract(
+                    "MapCoin",
+                    accounts[1]
+                )
+
+                const transactionResponseApprove = await mapCoinFrom.approve(
+                    subscriptionLicense.address,
+                    approveAmount
+                )
+
+                await transactionResponseApprove.wait()
+            }
+
+            const approveAmountFinal = await mapCoin.allowance(
+                fromAddress,
+                subscriptionLicense.address
+            )
+
+            expect(approveAmountFinal.toNumber()).to.equal(1000)
+            const subscriptionHash =
+                await subscriptionLicense.getSubscriptionHash(
+                    fromAddress,
+                    toAddress,
+                    mapCoinAddress,
+                    licensePrice,
+                    periodSeconds,
+                    gasPrice,
+                    nonce
+                )
+
+            let signature = await accounts[2].signMessage(
+                ethers.utils.arrayify(subscriptionHash)
+            )
+
+            await expect(
+                subscriptionLicense.executeSubscription(
+                    fromAddress,
+                    toAddress,
+                    mapCoinAddress,
+                    licensePrice,
+                    periodSeconds,
+                    gasPrice,
+                    nonce,
+                    signature
+                )
+            ).to.be.revertedWith(
+                "Subscription is not ready or conditions of transction are not met"
+            )
+        })
+
+        it("new subscription request should failed if approved amount is not enough", async () => {
+            const oneMinute = 60
+            await ethers.provider.send("evm_increaseTime", [oneMinute])
+            await ethers.provider.send("evm_mine")
+
+            const { deployer, secondPayer } = await getNamedAccounts()
+            const mapCoin = await ethers.getContract("MapCoin", deployer)
+
+            const subscriptionLicense = await ethers.getContract(
+                "SubscriptionLicense",
+                deployer
+            )
+
+            const accounts = await ethers.getSigners()
+
+            let toAddress = await subscriptionLicense.getRequiredToAddress()
+            let fromAddress = accounts[1].address
+            let mapCoinAddress =
+                await subscriptionLicense.getRequiredTokenAddress()
+            let licensePrice =
+                await subscriptionLicense.getRequiredTokenAmount()
+            let periodSeconds =
+                await subscriptionLicense.getRequiredPeriodSeconds()
+            let gasPrice = await subscriptionLicense.getRequiredGasPrice()
+            let nonce = 1
+
+            const fromBalance = await mapCoin.balanceOf(fromAddress)
+            expect(fromBalance).to.equal(0)
+            if (fromBalance.toNumber() <= 0) {
+                const transferAmount = "10000000"
+                const transactionResponse = await mapCoin.transfer(
+                    fromAddress,
+                    transferAmount
+                )
+                await transactionResponse.wait()
+            }
+
+            expect((await mapCoin.balanceOf(fromAddress)).toNumber()).to.equal(
+                10000000
+            )
+            const approveAmount = await mapCoin.allowance(
+                fromAddress,
+                subscriptionLicense.address
+            )
+            expect(approveAmount).to.equal(0)
+
+            const subscriptionHash =
+                await subscriptionLicense.getSubscriptionHash(
+                    fromAddress,
+                    toAddress,
+                    mapCoinAddress,
+                    licensePrice,
+                    periodSeconds,
+                    gasPrice,
+                    nonce
+                )
+
+            let signature = await accounts[1].signMessage(
+                ethers.utils.arrayify(subscriptionHash)
+            )
+
+            await expect(
+                subscriptionLicense.executeSubscription(
+                    fromAddress,
+                    toAddress,
+                    mapCoinAddress,
+                    licensePrice,
+                    periodSeconds,
+                    gasPrice,
+                    nonce,
+                    signature
+                )
+            ).to.be.revertedWith(
+                "Subscription is not ready or conditions of transction are not met"
+            )
+        })
     })
 
     describe("cancelSubscription", async function () {
