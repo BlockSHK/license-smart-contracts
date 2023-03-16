@@ -58,10 +58,71 @@ describe("PerpetualLicense", async function () {
             expect(event.args.licensePrice).to.equal(licensePrice)
         })
     })
+
+    describe("mintToken", async function () {
+        it("should revert if sender isn't the owner", async () => {
+            const accounts = await ethers.getSigners()
+            // Attempt to update the license price as a non-owner
+            await expect(
+                perpetualLicense
+                    .connect(accounts[1])
+                    .mintToken(accounts[2].address)
+            ).to.be.rejectedWith("Ownable: caller is not the owner")
+        })
+
+        it("should mint a new token if the caller is owner", async () => {
+            const accounts = await ethers.getSigners()
+            const licensePrice = await perpetualLicense.getLicensePrice()
+            const tokenId = await perpetualLicense.getTokenCounter()
+            await expect(perpetualLicense.mintToken(accounts[2].address))
+                .to.emit(perpetualLicense, "CreatedLicenseToken")
+                .withArgs(tokenId + 1, licensePrice)
+        })
+    })
     describe("getLicensePrice", async function () {
         it("should return the correct license price", async () => {
             const licensePrice = await perpetualLicense.getLicensePrice()
             expect(licensePrice).to.equal(ethers.utils.parseEther("0.01"))
+        })
+    })
+
+    describe("tokenURI", async function () {
+        it("should return the token URI", async () => {
+            const accounts = await ethers.getSigners()
+            const perpetualLicenseContractSecondPayer =
+                await perpetualLicense.connect(accounts[1])
+            const licensePrice =
+                await perpetualLicenseContractSecondPayer.getLicensePrice()
+            const tokenId =
+                await perpetualLicenseContractSecondPayer.getTokenCounter()
+
+            // Buy the token
+            await expect(
+                perpetualLicenseContractSecondPayer.buyToken({
+                    value: licensePrice,
+                })
+            )
+                .to.emit(
+                    perpetualLicenseContractSecondPayer,
+                    "CreatedLicenseToken"
+                )
+                .withArgs(tokenId.toNumber() + 1, licensePrice)
+
+            const tokenURI = await perpetualLicenseContractSecondPayer.tokenURI(
+                tokenId.toNumber()
+            )
+            expect(tokenURI).to.be.equal(
+                "data:application/json;base64,eyJuYW1lIjoiR29vZ2xlIiwibGljZW5zZSBuYW1lIjoiR29vZ2xlLWJhcmQtcGVycGV0dWFsIiwibGljZW5zZSBUeXBlIjoiUGVycGV0dWFsIiwicHJpY2UiOiIxMDAwMDAwMDAwMDAwMDAwMCIsInRva2VuSUQiOiIwIn0="
+            )
+        })
+
+        it("Fails when call the token URI of non existance token ID", async () => {
+            await expect(
+                perpetualLicense.tokenURI(1)
+            ).to.be.revertedWithCustomError(
+                perpetualLicense,
+                "ERC721Metadata__URI_QueryFor_NonExistentToken"
+            )
         })
     })
     describe("updateLicensePrice", () => {

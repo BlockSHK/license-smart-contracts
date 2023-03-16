@@ -22,6 +22,7 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
     string private i_licenseName;
     uint256 private i_periodSecond;
 
+    mapping(uint256 => uint256) public startTimestamp;
     mapping(uint256 => uint256) public expirationTimestamp;
     mapping(uint256 => uint256) public transferingAllowed;
 
@@ -50,7 +51,7 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
 
         transferingAllowed[s_tokenCounter] = 1;
         _safeMint(msg.sender, s_tokenCounter);
-
+        startTimestamp[s_tokenCounter] = block.timestamp;
         expirationTimestamp[s_tokenCounter] = block.timestamp.add(i_periodSecond);
         transferingAllowed[s_tokenCounter] = 0;
         s_tokenCounter = s_tokenCounter + 1;
@@ -61,7 +62,7 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
 
         transferingAllowed[s_tokenCounter] = 1;
         _safeMint(customer, s_tokenCounter);
-
+        startTimestamp[s_tokenCounter] = block.timestamp;
         expirationTimestamp[s_tokenCounter] = block.timestamp.add(i_periodSecond);
         transferingAllowed[s_tokenCounter] = 0;
         s_tokenCounter = s_tokenCounter + 1;
@@ -72,7 +73,7 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
         if (msg.value < s_licensePrice) {
             revert SubscriptionLicense__NeedMoreETHSent();
         }
-        if (block.timestamp < expirationTimestamp[tokenId]){
+        if (block.timestamp <= expirationTimestamp[tokenId]){
             expirationTimestamp[tokenId] = expirationTimestamp[tokenId].add(i_periodSecond);  
         }else{
             expirationTimestamp[tokenId] = block.timestamp.add(i_periodSecond);
@@ -106,7 +107,9 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
                                 '","price":"',
                                 Strings.toString(s_licensePrice),
                                 '","start timestamp":"',
-                                Strings.toString(block.timestamp),
+                                Strings.toString(startTimestamp[tokenId]),
+                                '","expiration timestamp":"',
+                                Strings.toString(expirationTimestamp[tokenId]),
                                 '","tokenID":"',
                                 Strings.toString(tokenId),
                                 '"}'
@@ -135,7 +138,7 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
     }
 
     function isSubscriptionActive(uint256 tokenId) public view returns (bool) {
-        return (block.timestamp < expirationTimestamp[tokenId]);
+        return (block.timestamp <= expirationTimestamp[tokenId]);
     }
 
     function isTransferAllowed(uint256 tokenId) public view returns (bool) {
@@ -158,16 +161,29 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
         require(_exists(tokenId), "ERC721: nonexistent token");
 
         _beforeTokenTransfer(from, to, tokenId,1);
-
         // clear approval
         _approve(address(0), tokenId);
-
+        super._transfer(from, to, tokenId);
         // update transferingAllowed mapping to 0
         transferingAllowed[tokenId] = 0;
-
-        super._transfer(from, to, tokenId);
     }
 
+    function safeTransferFrom(address from, address to, uint256 tokenId) public virtual override {
+        safeTransferFrom(from, to, tokenId, "");
+    }
+
+    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory _data) public virtual override {
+        require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721: transfer caller is not owner nor approved");
+        require(_exists(tokenId), "ERC721: nonexistent token");
+        require(transferingAllowed[tokenId] == 1, "ERC721: token is not approved for transfer");
+
+        _beforeTokenTransfer(from, to, tokenId,1);
+        // clear approval
+        _approve(address(0), tokenId);
+        super._safeTransfer(from, to, tokenId, _data);
+        // update transferingAllowed mapping to 0
+        transferingAllowed[tokenId] = 0;
+    }
 
 
     function updateLicensePrice(uint256 newPrice) public onlyOwner {
