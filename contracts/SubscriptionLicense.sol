@@ -21,7 +21,6 @@ contract SubscriptionLicense {
     string private i_licenseName;
 
     mapping(bytes32 => uint256) private nextValidTimestamp;
-    mapping(address => uint256) private extraNonce;
 
     event ExecuteSubscription(
         address indexed from, 
@@ -92,11 +91,11 @@ contract SubscriptionLicense {
         returns (bytes32)
     {
 
-        require( requiredToAddress == address(0) || to == requiredToAddress, "requiredToAddress Failure" );
-        require( requiredTokenAddress == address(0) || tokenAddress == requiredTokenAddress, "requiredTokenAddress Failure"  );
-        require( requiredTokenAmount == 0 || tokenAmount == requiredTokenAmount, "requiredTokenAmount Failure"  );
-        require( requiredPeriodSeconds == 0 || periodSeconds == requiredPeriodSeconds, "requiredPeriodSeconds Failure"  );
-        require( requiredGasPrice == 0 || gasPrice == requiredGasPrice, "requiredGasPrice Failure"  );
+        require( to == requiredToAddress, "requiredToAddress Failure" );
+        require( tokenAddress == requiredTokenAddress, "requiredTokenAddress Failure"  );
+        require( tokenAmount == requiredTokenAmount, "requiredTokenAmount Failure"  );
+        require( periodSeconds == requiredPeriodSeconds, "requiredPeriodSeconds Failure"  );
+        require(gasPrice == requiredGasPrice, "requiredGasPrice Failure"  );
 
         return keccak256(
             abi.encodePacked(
@@ -213,11 +212,6 @@ contract SubscriptionLicense {
         nextValidTimestamp[subscriptionHash] = block.timestamp.add(periodSeconds);
 
 
-        if(nonce > extraNonce[from]){
-          extraNonce[from] = nonce;
-        }
-
-
         uint256 startingBalance = ERC20(tokenAddress).balanceOf(to);
         ERC20(tokenAddress).transferFrom(from,to,tokenAmount);
         require(
@@ -268,23 +262,6 @@ contract SubscriptionLicense {
         }
 
         return returnValue != 0;
-    }
-
-
-    function endContract()
-        external
-    {
-      require(msg.sender==author);
-      selfdestruct(payable(author));
-    }
-
-
-    fallback() external payable   {
-       revert ();
-    }
-
-    receive() external payable {
-        revert("bad call");
     }
 
     function getRequiredToAddress() external view returns (address) {
