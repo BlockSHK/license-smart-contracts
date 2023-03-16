@@ -283,7 +283,42 @@ describe("FixedSubscriptionLicense", async function () {
             )
         })
     })
+    describe("tokenURI", async function () {
+        it("should return the token URI", async () => {
+            const accounts = await ethers.getSigners()
+            const fixedSubscriptionLicenseContractSecondPayer =
+                await fixedSubscription.connect(accounts[1])
+            const licensePrice =
+                await fixedSubscriptionLicenseContractSecondPayer.getLicensePrice()
+            const tokenId =
+                await fixedSubscriptionLicenseContractSecondPayer.getTokenCounter()
+            await expect(
+                fixedSubscriptionLicenseContractSecondPayer.buyToken({
+                    value: licensePrice,
+                })
+            )
+                .to.emit(
+                    fixedSubscriptionLicenseContractSecondPayer,
+                    "CreatedSubscriptionToken"
+                )
+                .withArgs(tokenId.toNumber() + 1, licensePrice)
 
+            const tokenURI =
+                await fixedSubscriptionLicenseContractSecondPayer.tokenURI(
+                    tokenId.toNumber()
+                )
+            expect(tokenURI).to.be.a("string")
+        })
+
+        it("Fails when call the token URI of non existance token ID", async () => {
+            await expect(
+                fixedSubscription.tokenURI(1)
+            ).to.be.revertedWithCustomError(
+                fixedSubscription,
+                "ERC721Metadata__URI_QueryFor_NonExistentToken"
+            )
+        })
+    })
     describe("getExpirationTime", async function () {
         it("should return the correct expiration time for the give token", async () => {
             const accounts = await ethers.getSigners()
@@ -361,7 +396,147 @@ describe("FixedSubscriptionLicense", async function () {
             expect(licensePrice).to.be.gt(0)
         })
     })
+    describe("Transfer License from TransferFrom", async function () {
+        it("Transfer the license token", async () => {
+            const accounts = await ethers.getSigners()
+            const fixedSubscriptionLicenseContractSecondPayer =
+                await fixedSubscription.connect(accounts[1])
+            const { deployer, secondPayer } = await getNamedAccounts()
+            const fixedSubscriptionDeployer = await ethers.getContract(
+                "FixedSubscriptionLicense",
+                deployer
+            )
+            const licensePrice =
+                await fixedSubscriptionLicenseContractSecondPayer.getLicensePrice()
+            const tokenId =
+                await fixedSubscriptionLicenseContractSecondPayer.getTokenCounter()
+            await expect(
+                fixedSubscriptionLicenseContractSecondPayer.buyToken({
+                    value: licensePrice,
+                })
+            )
+                .to.emit(
+                    fixedSubscriptionLicenseContractSecondPayer,
+                    "CreatedSubscriptionToken"
+                )
+                .withArgs(tokenId.toNumber() + 1, licensePrice)
 
+            await fixedSubscriptionDeployer.allowTransfer(tokenId)
+            const tranferingAllowed = await fixedSubscription.isTransferAllowed(
+                tokenId
+            )
+            expect(tranferingAllowed).to.be.true
+
+            // Transfer the token
+            await fixedSubscriptionLicenseContractSecondPayer.transferFrom(
+                accounts[1].address,
+                accounts[2].address,
+                tokenId
+            )
+
+            // Expect that the transfer has happened correctly
+            expect(
+                await fixedSubscriptionLicenseContractSecondPayer.balanceOf(
+                    accounts[1].address
+                )
+            ).to.equal(0)
+            expect(
+                await fixedSubscriptionLicenseContractSecondPayer.balanceOf(
+                    accounts[2].address
+                )
+            ).to.equal(1)
+            expect(
+                await fixedSubscriptionLicenseContractSecondPayer.ownerOf(
+                    tokenId
+                )
+            ).to.equal(accounts[2].address)
+        })
+
+        it("Fails to transfer a non-existent token", async () => {
+            const accounts = await ethers.getSigners()
+            const fixedSubscriptionLicenseContractSecondPayer =
+                await fixedSubscription.connect(accounts[1])
+            const invalidTokenId = 999 // An invalid token ID
+
+            // Expect that transferring a non-existent token fails with an error
+            await expect(
+                fixedSubscriptionLicenseContractSecondPayer.transferFrom(
+                    accounts[1].address,
+                    accounts[2].address,
+                    invalidTokenId
+                )
+            ).to.be.revertedWith("ERC721: invalid token ID")
+        })
+    })
+
+    describe("Transfer License from SafeTransferFrom", async function () {
+        it("Transfer the license token", async () => {
+            const accounts = await ethers.getSigners()
+            const fixedSubscriptionLicenseContractSecondPayer =
+                await fixedSubscription.connect(accounts[1])
+            const { deployer, secondPayer } = await getNamedAccounts()
+            const fixedSubscriptionDeployer = await ethers.getContract(
+                "FixedSubscriptionLicense",
+                deployer
+            )
+            const licensePrice =
+                await fixedSubscriptionLicenseContractSecondPayer.getLicensePrice()
+            const tokenId =
+                await fixedSubscriptionLicenseContractSecondPayer.getTokenCounter()
+            await expect(
+                fixedSubscriptionLicenseContractSecondPayer.buyToken({
+                    value: licensePrice,
+                })
+            )
+                .to.emit(
+                    fixedSubscriptionLicenseContractSecondPayer,
+                    "CreatedSubscriptionToken"
+                )
+                .withArgs(tokenId.toNumber() + 1, licensePrice)
+
+            await fixedSubscriptionDeployer.allowTransfer(tokenId)
+            const tranferingAllowed = await fixedSubscription.isTransferAllowed(
+                tokenId
+            )
+            expect(tranferingAllowed).to.be.true
+
+            // Transfer the token
+            await fixedSubscriptionLicenseContractSecondPayer[
+                "safeTransferFrom(address,address,uint256)"
+            ](accounts[1].address, accounts[2].address, tokenId)
+
+            // Expect that the transfer has happened correctly
+            expect(
+                await fixedSubscriptionLicenseContractSecondPayer.balanceOf(
+                    accounts[1].address
+                )
+            ).to.equal(0)
+            expect(
+                await fixedSubscriptionLicenseContractSecondPayer.balanceOf(
+                    accounts[2].address
+                )
+            ).to.equal(1)
+            expect(
+                await fixedSubscriptionLicenseContractSecondPayer.ownerOf(
+                    tokenId
+                )
+            ).to.equal(accounts[2].address)
+        })
+
+        it("Fails to transfer a non-existent token", async () => {
+            const accounts = await ethers.getSigners()
+            const fixedSubscriptionLicenseContractSecondPayer =
+                await fixedSubscription.connect(accounts[1])
+            const invalidTokenId = 999 // An invalid token ID
+
+            // Expect that transferring a non-existent token fails with an error
+            await expect(
+                fixedSubscriptionLicenseContractSecondPayer[
+                    "safeTransferFrom(address,address,uint256)"
+                ](accounts[1].address, accounts[2].address, invalidTokenId)
+            ).to.be.revertedWith("ERC721: invalid token ID")
+        })
+    })
     describe("isTransferAllowed", async function () {
         it("should return false since owner didn't allow transfering", async () => {
             const accounts = await ethers.getSigners()
@@ -417,6 +592,144 @@ describe("FixedSubscriptionLicense", async function () {
                 tokenId
             )
             expect(tranferingAllowed).to.be.true
+        })
+    })
+
+    describe("restrictTransfer", async function () {
+        it("should return false when owner allow and then restricted transfering", async () => {
+            const accounts = await ethers.getSigners()
+            const fixedSubscriptionLicenseContractSecondPayer =
+                await fixedSubscription.connect(accounts[1])
+            const { deployer, secondPayer } = await getNamedAccounts()
+            const fixedSubscriptionDeployer = await ethers.getContract(
+                "FixedSubscriptionLicense",
+                deployer
+            )
+            const licensePrice =
+                await fixedSubscriptionLicenseContractSecondPayer.getLicensePrice()
+            const tokenId =
+                await fixedSubscriptionLicenseContractSecondPayer.getTokenCounter()
+            await expect(
+                fixedSubscriptionLicenseContractSecondPayer.buyToken({
+                    value: licensePrice,
+                })
+            )
+                .to.emit(
+                    fixedSubscriptionLicenseContractSecondPayer,
+                    "CreatedSubscriptionToken"
+                )
+                .withArgs(tokenId.toNumber() + 1, licensePrice)
+
+            await fixedSubscriptionDeployer.allowTransfer(tokenId)
+            let tranferingAllowed = await fixedSubscription.isTransferAllowed(
+                tokenId
+            )
+            expect(tranferingAllowed).to.be.true
+
+            await fixedSubscriptionDeployer.restrictTransfer(tokenId)
+
+            tranferingAllowed = await fixedSubscription.isTransferAllowed(
+                tokenId
+            )
+            expect(tranferingAllowed).to.be.false
+        })
+
+        it("reverts if a non-owner tries to update the permission for transfer license", async () => {
+            const accounts = await ethers.getSigners()
+            const fixedSubscriptionLicenseContractSecondPayer =
+                await fixedSubscription.connect(accounts[1])
+            const { deployer, secondPayer } = await getNamedAccounts()
+            const fixedSubscriptionDeployer = await ethers.getContract(
+                "FixedSubscriptionLicense",
+                deployer
+            )
+            const licensePrice =
+                await fixedSubscriptionLicenseContractSecondPayer.getLicensePrice()
+            const tokenId =
+                await fixedSubscriptionLicenseContractSecondPayer.getTokenCounter()
+            await expect(
+                fixedSubscriptionLicenseContractSecondPayer.buyToken({
+                    value: licensePrice,
+                })
+            )
+                .to.emit(
+                    fixedSubscriptionLicenseContractSecondPayer,
+                    "CreatedSubscriptionToken"
+                )
+                .withArgs(tokenId.toNumber() + 1, licensePrice)
+
+            await fixedSubscriptionDeployer.allowTransfer(tokenId)
+            let tranferingAllowed = await fixedSubscription.isTransferAllowed(
+                tokenId
+            )
+            expect(tranferingAllowed).to.be.true
+
+            await expect(
+                fixedSubscription.connect(accounts[1]).restrictTransfer(tokenId)
+            ).to.be.rejectedWith("Ownable: caller is not the owner")
+        })
+    })
+
+    describe("allowTransfer", async function () {
+        it("allows the owner to update the permission for transfer license", async () => {
+            const accounts = await ethers.getSigners()
+            const fixedSubscriptionLicenseContractSecondPayer =
+                await fixedSubscription.connect(accounts[1])
+            const { deployer, secondPayer } = await getNamedAccounts()
+            const fixedSubscriptionDeployer = await ethers.getContract(
+                "FixedSubscriptionLicense",
+                deployer
+            )
+            const licensePrice =
+                await fixedSubscriptionLicenseContractSecondPayer.getLicensePrice()
+            const tokenId =
+                await fixedSubscriptionLicenseContractSecondPayer.getTokenCounter()
+            await expect(
+                fixedSubscriptionLicenseContractSecondPayer.buyToken({
+                    value: licensePrice,
+                })
+            )
+                .to.emit(
+                    fixedSubscriptionLicenseContractSecondPayer,
+                    "CreatedSubscriptionToken"
+                )
+                .withArgs(tokenId.toNumber() + 1, licensePrice)
+
+            await fixedSubscriptionDeployer.allowTransfer(tokenId)
+            const tranferingAllowed = await fixedSubscription.isTransferAllowed(
+                tokenId
+            )
+            expect(tranferingAllowed).to.be.true
+        })
+
+        it("reverts if a non-owner tries to update the permission for transfer license", async () => {
+            const accounts = await ethers.getSigners()
+            const fixedSubscriptionLicenseContractSecondPayer =
+                await fixedSubscription.connect(accounts[1])
+            const { deployer, secondPayer } = await getNamedAccounts()
+            const fixedSubscriptionDeployer = await ethers.getContract(
+                "FixedSubscriptionLicense",
+                deployer
+            )
+            const licensePrice =
+                await fixedSubscriptionLicenseContractSecondPayer.getLicensePrice()
+            const tokenId =
+                await fixedSubscriptionLicenseContractSecondPayer.getTokenCounter()
+            await expect(
+                fixedSubscriptionLicenseContractSecondPayer.buyToken({
+                    value: licensePrice,
+                })
+            )
+                .to.emit(
+                    fixedSubscriptionLicenseContractSecondPayer,
+                    "CreatedSubscriptionToken"
+                )
+                .withArgs(tokenId.toNumber() + 1, licensePrice)
+
+            await fixedSubscriptionDeployer.allowTransfer(tokenId)
+            await expect(
+                fixedSubscription.connect(accounts[1]).allowTransfer(tokenId)
+            ).to.be.rejectedWith("Ownable: caller is not the owner")
         })
     })
 
@@ -537,6 +850,231 @@ describe("FixedSubscriptionLicense", async function () {
             // console.log("expected balance:", expectedBalance.toString())
 
             expect(ownerBalanceAfter).to.equal(expectedBalance)
+        })
+    })
+
+    describe("getRefundEligible", async function () {
+        it("should return the true if the timestamp is less than expiration timestamp", async () => {
+            // const sevenDays = 7 * 24 * 60 * 60
+            const oneMinute = 60
+
+            await ethers.provider.send("evm_increaseTime", [oneMinute])
+            await ethers.provider.send("evm_mine")
+
+            const accounts = await ethers.getSigners()
+            const fixedSubscriptionLicenseContractSecondPayer =
+                await fixedSubscription.connect(accounts[1])
+            const licensePrice =
+                await fixedSubscriptionLicenseContractSecondPayer.getLicensePrice()
+            const tokenId =
+                await fixedSubscriptionLicenseContractSecondPayer.getTokenCounter()
+            await expect(
+                fixedSubscriptionLicenseContractSecondPayer.buyToken({
+                    value: licensePrice,
+                })
+            )
+                .to.emit(
+                    fixedSubscriptionLicenseContractSecondPayer,
+                    "CreatedSubscriptionToken"
+                )
+                .withArgs(tokenId.toNumber() + 1, licensePrice)
+
+            const blockNumBefore = await ethers.provider.getBlockNumber()
+            const blockBefore = await ethers.provider.getBlock(blockNumBefore)
+            const timestampBefore = blockBefore.timestamp
+            // console.log(timestampBefore)
+            const expirationTime = await fixedSubscription.getExpirationTime(
+                tokenId.toNumber()
+            )
+            expect(expirationTime).to.equal(timestampBefore + 60 * 60 * 24 * 30)
+            // console.log(timestampBefore + 60 * 60 * 24 * 30)
+            // console.log("Expiration time initial", expirationTime.toNumber())
+
+            await ethers.provider.send("evm_increaseTime", [oneMinute])
+            await ethers.provider.send("evm_mine")
+
+            await expect(
+                fixedSubscriptionLicenseContractSecondPayer.updateSubscription(
+                    tokenId,
+                    {
+                        value: licensePrice,
+                    }
+                )
+            )
+                .to.emit(
+                    fixedSubscriptionLicenseContractSecondPayer,
+                    "UpdatedSubscriptionToken"
+                )
+                .withArgs(tokenId.toNumber(), licensePrice)
+
+            expect(
+                await fixedSubscription.getRefundEligible(
+                    tokenId,
+                    timestampBefore + 60 * 60
+                )
+            ).to.be.true
+        })
+
+        it("should return the false if the timestamp is less than expiration timestamp", async () => {
+            // const sevenDays = 7 * 24 * 60 * 60
+            const oneMinute = 60
+
+            await ethers.provider.send("evm_increaseTime", [oneMinute])
+            await ethers.provider.send("evm_mine")
+
+            const accounts = await ethers.getSigners()
+            const fixedSubscriptionLicenseContractSecondPayer =
+                await fixedSubscription.connect(accounts[1])
+            const licensePrice =
+                await fixedSubscriptionLicenseContractSecondPayer.getLicensePrice()
+            const tokenId =
+                await fixedSubscriptionLicenseContractSecondPayer.getTokenCounter()
+            await expect(
+                fixedSubscriptionLicenseContractSecondPayer.buyToken({
+                    value: licensePrice,
+                })
+            )
+                .to.emit(
+                    fixedSubscriptionLicenseContractSecondPayer,
+                    "CreatedSubscriptionToken"
+                )
+                .withArgs(tokenId.toNumber() + 1, licensePrice)
+
+            const blockNumBefore = await ethers.provider.getBlockNumber()
+            const blockBefore = await ethers.provider.getBlock(blockNumBefore)
+            const timestampBefore = blockBefore.timestamp
+            // console.log(timestampBefore)
+            const expirationTime = await fixedSubscription.getExpirationTime(
+                tokenId.toNumber()
+            )
+            expect(expirationTime).to.equal(timestampBefore + 60 * 60 * 24 * 30)
+            // console.log(timestampBefore + 60 * 60 * 24 * 30)
+            // console.log("Expiration time initial", expirationTime.toNumber())
+
+            await ethers.provider.send("evm_increaseTime", [oneMinute])
+            await ethers.provider.send("evm_mine")
+
+            await expect(
+                fixedSubscriptionLicenseContractSecondPayer.updateSubscription(
+                    tokenId,
+                    {
+                        value: licensePrice,
+                    }
+                )
+            )
+                .to.emit(
+                    fixedSubscriptionLicenseContractSecondPayer,
+                    "UpdatedSubscriptionToken"
+                )
+                .withArgs(tokenId.toNumber(), licensePrice)
+
+            expect(
+                await fixedSubscription.getRefundEligible(
+                    tokenId,
+                    timestampBefore + 60 * 60 * 24 * 30 * 2
+                )
+            ).to.be.false
+        })
+    })
+
+    describe("cancelSubcription", async function () {
+        it("Owner canceled subscription which set expiration time to currect block", async () => {
+            // const sevenDays = 7 * 24 * 60 * 60
+            const oneMinute = 60
+
+            await ethers.provider.send("evm_increaseTime", [oneMinute])
+            await ethers.provider.send("evm_mine")
+
+            const accounts = await ethers.getSigners()
+            const fixedSubscriptionLicenseContractSecondPayer =
+                await fixedSubscription.connect(accounts[1])
+            const licensePrice =
+                await fixedSubscriptionLicenseContractSecondPayer.getLicensePrice()
+            const tokenId =
+                await fixedSubscriptionLicenseContractSecondPayer.getTokenCounter()
+            await expect(
+                fixedSubscriptionLicenseContractSecondPayer.buyToken({
+                    value: licensePrice,
+                })
+            )
+                .to.emit(
+                    fixedSubscriptionLicenseContractSecondPayer,
+                    "CreatedSubscriptionToken"
+                )
+                .withArgs(tokenId.toNumber() + 1, licensePrice)
+
+            const blockNumBefore = await ethers.provider.getBlockNumber()
+            const blockBefore = await ethers.provider.getBlock(blockNumBefore)
+            const timestampBefore = blockBefore.timestamp
+            // console.log(timestampBefore)
+            const expirationTime = await fixedSubscription.getExpirationTime(
+                tokenId.toNumber()
+            )
+            expect(expirationTime).to.equal(timestampBefore + 60 * 60 * 24 * 30)
+            // console.log(timestampBefore + 60 * 60 * 24 * 30)
+            // console.log("Expiration time initial", expirationTime.toNumber())
+
+            await ethers.provider.send("evm_increaseTime", [oneMinute])
+            await ethers.provider.send("evm_mine")
+            await fixedSubscription.cancelSubscription(tokenId)
+
+            const blockNumAfter = await ethers.provider.getBlockNumber()
+            const blockAfter = await ethers.provider.getBlock(blockNumAfter)
+            const timestampAfter = blockAfter.timestamp
+            // console.log(timestampAfter)
+            const expirationTimeAfterUpdate =
+                await fixedSubscription.getExpirationTime(tokenId.toNumber())
+            // console.log(
+            //     "Expiration time after",
+            //     expirationTimeAfterUpdate.toNumber()
+            // )
+            expect(expirationTimeAfterUpdate).to.equal(timestampAfter)
+        })
+
+        it("Owner canceled subscription which set expiration time to currect block", async () => {
+            // const sevenDays = 7 * 24 * 60 * 60
+            const oneMinute = 60
+
+            await ethers.provider.send("evm_increaseTime", [oneMinute])
+            await ethers.provider.send("evm_mine")
+
+            const accounts = await ethers.getSigners()
+            const fixedSubscriptionLicenseContractSecondPayer =
+                await fixedSubscription.connect(accounts[1])
+            const licensePrice =
+                await fixedSubscriptionLicenseContractSecondPayer.getLicensePrice()
+            const tokenId =
+                await fixedSubscriptionLicenseContractSecondPayer.getTokenCounter()
+            await expect(
+                fixedSubscriptionLicenseContractSecondPayer.buyToken({
+                    value: licensePrice,
+                })
+            )
+                .to.emit(
+                    fixedSubscriptionLicenseContractSecondPayer,
+                    "CreatedSubscriptionToken"
+                )
+                .withArgs(tokenId.toNumber() + 1, licensePrice)
+
+            const blockNumBefore = await ethers.provider.getBlockNumber()
+            const blockBefore = await ethers.provider.getBlock(blockNumBefore)
+            const timestampBefore = blockBefore.timestamp
+            // console.log(timestampBefore)
+            const expirationTime = await fixedSubscription.getExpirationTime(
+                tokenId.toNumber()
+            )
+            expect(expirationTime).to.equal(timestampBefore + 60 * 60 * 24 * 30)
+            // console.log(timestampBefore + 60 * 60 * 24 * 30)
+            // console.log("Expiration time initial", expirationTime.toNumber())
+
+            await ethers.provider.send("evm_increaseTime", [oneMinute])
+            await ethers.provider.send("evm_mine")
+
+            await expect(
+                fixedSubscription
+                    .connect(accounts[1])
+                    .cancelSubscription(tokenId)
+            ).to.be.rejectedWith("Ownable: caller is not the owner")
         })
     })
 })
