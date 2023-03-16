@@ -11,17 +11,17 @@ contract SubscriptionLicense {
     using SafeMath for uint256;
 
 
-    address public author;
+    address private author;
 
-    address public requiredToAddress;
-    address public requiredTokenAddress;
-    uint256 public requiredTokenAmount;
-    uint256 public requiredPeriodSeconds;
-    uint256 public requiredGasPrice;
+    address private requiredToAddress;
+    address private requiredTokenAddress;
+    uint256 private requiredTokenAmount;
+    uint256 private requiredPeriodSeconds;
+    uint256 private requiredGasPrice;
     string private i_licenseName;
 
-    mapping(bytes32 => uint256) public nextValidTimestamp;
-    mapping(address => uint256) public extraNonce;
+    mapping(bytes32 => uint256) private nextValidTimestamp;
+    mapping(address => uint256) private extraNonce;
 
     event ExecuteSubscription(
         address indexed from, 
@@ -285,5 +285,29 @@ contract SubscriptionLicense {
 
     receive() external payable {
         revert("bad call");
+    }
+
+    function getRequiredToAddress() external view returns (address) {
+        return requiredToAddress;
+    }
+
+    function getRequiredTokenAddress() external view returns (address) {
+        return requiredTokenAddress;
+    }
+
+    function getRequiredTokenAmount() external view returns (uint256) {
+        return requiredTokenAmount;
+    }
+
+    function getRequiredPeriodSeconds() external view returns (uint256) {
+        return requiredPeriodSeconds;
+    }
+
+    function getRequiredGasPrice() external view returns (uint256) {
+        return requiredGasPrice;
+    }
+
+    function getILicenseName() external view returns (string memory) {
+        return i_licenseName;
     }
 }

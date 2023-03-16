@@ -12,18 +12,18 @@ describe("PerpetualLicense", async function () {
         )
     })
 
-    describe("mintToken", async function () {
+    describe("buyToken", async function () {
         it("should revert if sender doesn't send enough ETH", async () => {
             const licensePrice = await perpetualLicense.getLicensePrice()
             const insufficientEth = licensePrice.sub(1)
-            await expect(perpetualLicense.mintToken({ value: insufficientEth }))
+            await expect(perpetualLicense.buyToken({ value: insufficientEth }))
                 .to.be.revertedWithCustomError
         })
 
         it("should mint a new token if sender sends enough ETH", async () => {
             const licensePrice = await perpetualLicense.getLicensePrice()
             const tokenId = await perpetualLicense.getTokenCounter()
-            await expect(perpetualLicense.mintToken({ value: licensePrice }))
+            await expect(perpetualLicense.buyToken({ value: licensePrice }))
                 .to.emit(perpetualLicense, "CreatedLicenseToken")
                 .withArgs(tokenId + 1, licensePrice)
         })
@@ -31,7 +31,7 @@ describe("PerpetualLicense", async function () {
         it("should update the tokenCounter when a new token is minted", async () => {
             const licensePrice = await perpetualLicense.getLicensePrice()
             const tokenIdBefore = await perpetualLicense.getTokenCounter()
-            await perpetualLicense.mintToken({ value: licensePrice })
+            await perpetualLicense.buyToken({ value: licensePrice })
             const tokenIdAfter = await perpetualLicense.getTokenCounter()
             expect(tokenIdAfter).to.equal(tokenIdBefore.add(1))
         })
@@ -40,7 +40,7 @@ describe("PerpetualLicense", async function () {
             const licensePrice = await perpetualLicense.getLicensePrice()
 
             const tokenIdBefore = await perpetualLicense.getTokenCounter()
-            const contractTx = await perpetualLicense.mintToken({
+            const contractTx = await perpetualLicense.buyToken({
                 value: licensePrice,
             })
 
@@ -97,9 +97,66 @@ describe("PerpetualLicense", async function () {
         })
     })
 
+    describe("Transfer License", async function () {
+        it("Transfer the license token", async () => {
+            const accounts = await ethers.getSigners()
+            const perpetualLicenseContractSecondPayer =
+                await perpetualLicense.connect(accounts[1])
+            const licensePrice =
+                await perpetualLicenseContractSecondPayer.getLicensePrice()
+            const tokenId =
+                await perpetualLicenseContractSecondPayer.getTokenCounter()
+
+            // Buy the token
+            await expect(
+                perpetualLicenseContractSecondPayer.buyToken({
+                    value: licensePrice,
+                })
+            )
+                .to.emit(
+                    perpetualLicenseContractSecondPayer,
+                    "CreatedLicenseToken"
+                )
+                .withArgs(tokenId.toNumber() + 1, licensePrice)
+
+            // Transfer the token
+            await perpetualLicenseContractSecondPayer[
+                "safeTransferFrom(address,address,uint256)"
+            ](accounts[1].address, accounts[2].address, tokenId)
+
+            // Expect that the transfer has happened correctly
+            expect(
+                await perpetualLicenseContractSecondPayer.balanceOf(
+                    accounts[1].address
+                )
+            ).to.equal(0)
+            expect(
+                await perpetualLicenseContractSecondPayer.balanceOf(
+                    accounts[2].address
+                )
+            ).to.equal(1)
+            expect(
+                await perpetualLicenseContractSecondPayer.ownerOf(tokenId)
+            ).to.equal(accounts[2].address)
+        })
+
+        it("Fails to transfer a non-existent token", async () => {
+            const accounts = await ethers.getSigners()
+            const perpetualLicenseContractSecondPayer =
+                await perpetualLicense.connect(accounts[1])
+            const invalidTokenId = 999 // An invalid token ID
+
+            // Expect that transferring a non-existent token fails with an error
+            await expect(
+                perpetualLicenseContractSecondPayer[
+                    "safeTransferFrom(address,address,uint256)"
+                ](accounts[1].address, accounts[2].address, invalidTokenId)
+            ).to.be.revertedWith("ERC721: invalid token ID")
+        })
+    })
     describe("withdraw", function () {
         beforeEach(async () => {
-            await perpetualLicense.mintToken({ value: sendValue })
+            await perpetualLicense.buyToken({ value: sendValue })
         })
 
         it("Only allows the owner to withdraw", async function () {
@@ -121,7 +178,7 @@ describe("PerpetualLicense", async function () {
             const tokenId =
                 await perpetualLicenseContractSecondPayer.getTokenCounter()
             await expect(
-                perpetualLicenseContractSecondPayer.mintToken({
+                perpetualLicenseContractSecondPayer.buyToken({
                     value: licensePrice,
                 })
             )

@@ -17,19 +17,18 @@ describe("FixedSubscriptionLicense", async function () {
         await ethers.provider.send("evm_mine")
     })
 
-    describe("mintToken", async function () {
+    describe("buyToken", async function () {
         it("should revert if sender doesn't send enough ETH", async () => {
             const licensePrice = await fixedSubscription.getLicensePrice()
             const insufficientEth = licensePrice.sub(1)
-            await expect(
-                fixedSubscription.mintToken({ value: insufficientEth })
-            ).to.be.revertedWithCustomError
+            await expect(fixedSubscription.buyToken({ value: insufficientEth }))
+                .to.be.revertedWithCustomError
         })
 
         it("should mint a new token if sender sends enough ETH", async () => {
             const licensePrice = await fixedSubscription.getLicensePrice()
             const tokenId = await fixedSubscription.getTokenCounter()
-            await expect(fixedSubscription.mintToken({ value: licensePrice }))
+            await expect(fixedSubscription.buyToken({ value: licensePrice }))
                 .to.emit(fixedSubscription, "CreatedSubscriptionToken")
                 .withArgs(tokenId + 1, licensePrice)
         })
@@ -37,7 +36,7 @@ describe("FixedSubscriptionLicense", async function () {
         it("should update the tokenCounter when a new token is minted", async () => {
             const licensePrice = await fixedSubscription.getLicensePrice()
             const tokenIdBefore = await fixedSubscription.getTokenCounter()
-            await fixedSubscription.mintToken({ value: licensePrice })
+            await fixedSubscription.buyToken({ value: licensePrice })
             const tokenIdAfter = await fixedSubscription.getTokenCounter()
             expect(tokenIdAfter).to.equal(tokenIdBefore.add(1))
         })
@@ -46,7 +45,7 @@ describe("FixedSubscriptionLicense", async function () {
             const licensePrice = await fixedSubscription.getLicensePrice()
 
             const tokenIdBefore = await fixedSubscription.getTokenCounter()
-            const contractTx = await fixedSubscription.mintToken({
+            const contractTx = await fixedSubscription.buyToken({
                 value: licensePrice,
             })
 
@@ -69,7 +68,7 @@ describe("FixedSubscriptionLicense", async function () {
             const contractBalanceBefore = await ethers.provider.getBalance(
                 fixedSubscription.address
             )
-            await fixedSubscription.mintToken({ value: licensePrice })
+            await fixedSubscription.buyToken({ value: licensePrice })
             const contractBalanceAfter = await ethers.provider.getBalance(
                 fixedSubscription.address
             )
@@ -88,7 +87,7 @@ describe("FixedSubscriptionLicense", async function () {
             const tokenId =
                 await fixedSubscriptionLicenseContractSecondPayer.getTokenCounter()
             await expect(
-                fixedSubscriptionLicenseContractSecondPayer.mintToken({
+                fixedSubscriptionLicenseContractSecondPayer.buyToken({
                     value: licensePrice,
                 })
             )
@@ -121,7 +120,7 @@ describe("FixedSubscriptionLicense", async function () {
             const tokenId =
                 await fixedSubscriptionLicenseContractSecondPayer.getTokenCounter()
             await expect(
-                fixedSubscriptionLicenseContractSecondPayer.mintToken({
+                fixedSubscriptionLicenseContractSecondPayer.buyToken({
                     value: licensePrice,
                 })
             )
@@ -153,6 +152,64 @@ describe("FixedSubscriptionLicense", async function () {
         it("should return a license price greater than zero", async () => {
             const licensePrice = await fixedSubscription.getLicensePrice()
             expect(licensePrice).to.be.gt(0)
+        })
+    })
+
+    describe("isTransferAllowed", async function () {
+        it("should return false since owner didn't allow transfering", async () => {
+            const accounts = await ethers.getSigners()
+            const fixedSubscriptionLicenseContractSecondPayer =
+                await fixedSubscription.connect(accounts[1])
+            const licensePrice =
+                await fixedSubscriptionLicenseContractSecondPayer.getLicensePrice()
+            const tokenId =
+                await fixedSubscriptionLicenseContractSecondPayer.getTokenCounter()
+            await expect(
+                fixedSubscriptionLicenseContractSecondPayer.buyToken({
+                    value: licensePrice,
+                })
+            )
+                .to.emit(
+                    fixedSubscriptionLicenseContractSecondPayer,
+                    "CreatedSubscriptionToken"
+                )
+                .withArgs(tokenId.toNumber() + 1, licensePrice)
+
+            const tranferingAllowed = await fixedSubscription.isTransferAllowed(
+                tokenId
+            )
+            expect(tranferingAllowed).to.be.false
+        })
+
+        it("should return true when owner allow transfering", async () => {
+            const accounts = await ethers.getSigners()
+            const fixedSubscriptionLicenseContractSecondPayer =
+                await fixedSubscription.connect(accounts[1])
+            const { deployer, secondPayer } = await getNamedAccounts()
+            const fixedSubscriptionDeployer = await ethers.getContract(
+                "FixedSubscriptionLicense",
+                deployer
+            )
+            const licensePrice =
+                await fixedSubscriptionLicenseContractSecondPayer.getLicensePrice()
+            const tokenId =
+                await fixedSubscriptionLicenseContractSecondPayer.getTokenCounter()
+            await expect(
+                fixedSubscriptionLicenseContractSecondPayer.buyToken({
+                    value: licensePrice,
+                })
+            )
+                .to.emit(
+                    fixedSubscriptionLicenseContractSecondPayer,
+                    "CreatedSubscriptionToken"
+                )
+                .withArgs(tokenId.toNumber() + 1, licensePrice)
+
+            await fixedSubscriptionDeployer.allowTransfer(tokenId)
+            const tranferingAllowed = await fixedSubscription.isTransferAllowed(
+                tokenId
+            )
+            expect(tranferingAllowed).to.be.true
         })
     })
 
@@ -204,7 +261,7 @@ describe("FixedSubscriptionLicense", async function () {
 
     describe("withdraw", function () {
         beforeEach(async () => {
-            await fixedSubscription.mintToken({ value: sendValue })
+            await fixedSubscription.buyToken({ value: sendValue })
         })
 
         it("Only allows the owner to withdraw", async function () {
@@ -225,7 +282,7 @@ describe("FixedSubscriptionLicense", async function () {
             const tokenId =
                 await perpetualLicenseContractSecondPayer.getTokenCounter()
             await expect(
-                perpetualLicenseContractSecondPayer.mintToken({
+                perpetualLicenseContractSecondPayer.buyToken({
                     value: licensePrice,
                 })
             )

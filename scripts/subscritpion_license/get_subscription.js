@@ -15,31 +15,39 @@ async function main() {
         deployer
     )
 
-    let wallet = new ethers.Wallet(
-        "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+    const accounts = await ethers.getSigners()
+
+    let toAddress = await subscriptionLicense.getRequiredToAddress()
+    let fromAddress = accounts[1].address
+    let mapCoinAddress = await subscriptionLicense.getRequiredTokenAddress()
+    let licensePrice = await subscriptionLicense.getRequiredTokenAmount()
+    let periodSeconds = await subscriptionLicense.getRequiredPeriodSeconds()
+    let gasPrice = await subscriptionLicense.getRequiredGasPrice()
+    let nonce = 1
+    console.log(
+        deployer,
+        toAddress,
+        fromAddress,
+        mapCoinAddress,
+        licensePrice.toNumber(),
+        periodSeconds.toNumber(),
+        gasPrice.toNumber()
     )
 
-    let toAddress = "0x76eD2B384f9fA8649E7c15d324367f78515183aE"
-    let fromAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
-    let mapCoinAddress = mapCoin.address
-    let licensePrice = "10"
-    let periodSeconds = "60"
-    let gasPrice = "1"
-    let nonce = 1
+    const fromBalance = await mapCoin.balanceOf(fromAddress)
 
-    console.log(`Got contract MapCoin at ${mapCoin.address}`)
-
-    // const fromBalance = await mapCoin.balanceOf(fromAddress)
-
-    // if (fromBalance.toNumber() <= 0) {
-    //     const transferAmount = "10000000"
-    //     const transactionResponse = await mapCoin.transfer(
-    //         fromAddress,
-    //         transferAmount
-    //     )
-    //     await transactionResponse.wait()
-    // }
-
+    if (fromBalance.toNumber() <= 0) {
+        const transferAmount = "10000000"
+        const transactionResponse = await mapCoin.transfer(
+            fromAddress,
+            transferAmount
+        )
+        await transactionResponse.wait()
+    }
+    console.log(
+        "from Balance",
+        (await mapCoin.balanceOf(fromAddress)).toNumber()
+    )
     const approveAmount = await mapCoin.allowance(
         fromAddress,
         subscriptionLicense.address
@@ -47,13 +55,13 @@ async function main() {
 
     if (approveAmount.toNumber() <= 0) {
         const approveAmount = "1000"
-
+        const mapCoinFrom = await ethers.getContract("MapCoin", accounts[1])
         console.log(`Got contract MapCoin at ${mapCoin.address}`)
         console.log(
             `Approve ${approveAmount} token to address ${subscriptionLicense.address} for spend on behalf`
         )
 
-        const transactionResponseApprove = await mapCoin.approve(
+        const transactionResponseApprove = await mapCoinFrom.approve(
             subscriptionLicense.address,
             approveAmount
         )
@@ -81,7 +89,7 @@ async function main() {
         nonce // to allow multiple subscriptions with the same parameters
     )
 
-    let signature = await wallet.signMessage(
+    let signature = await accounts[1].signMessage(
         ethers.utils.arrayify(subscriptionHash)
     )
 

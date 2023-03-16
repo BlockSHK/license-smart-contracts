@@ -15,16 +15,14 @@ async function main() {
         deployer
     )
 
-    let wallet = new ethers.Wallet(
-        "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
-    )
+    const accounts = await ethers.getSigners()
 
-    let toAddress = "0x76eD2B384f9fA8649E7c15d324367f78515183aE"
-    let fromAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
-    let mapCoinAddress = mapCoin.address
-    let licensePrice = "10"
-    let periodSeconds = "60"
-    let gasPrice = "1"
+    let toAddress = await subscriptionLicense.getRequiredToAddress()
+    let fromAddress = accounts[1].address
+    let mapCoinAddress = await subscriptionLicense.getRequiredTokenAddress()
+    let licensePrice = await subscriptionLicense.getRequiredTokenAmount()
+    let periodSeconds = await subscriptionLicense.getRequiredPeriodSeconds()
+    let gasPrice = await subscriptionLicense.getRequiredGasPrice()
     let nonce = 1
 
     const subscriptionHash = await subscriptionLicense.getSubscriptionHash(
@@ -37,7 +35,7 @@ async function main() {
         nonce
     )
 
-    let signature = await wallet.signMessage(
+    let signature = await accounts[1].signMessage(
         ethers.utils.arrayify(subscriptionHash)
     )
 
@@ -54,16 +52,21 @@ async function main() {
 
     console.log(`Is Subscription Active :- ${isSubscriptionActive}`)
     if (isSubscriptionActive) {
-        let cancelSubscription = await subscriptionLicense.cancelSubscription(
-            fromAddress, //the subscriber
-            toAddress, //the publisher
-            mapCoinAddress, //the token address paid to the publisher
-            licensePrice, //the token amount paid to the publisher
-            periodSeconds, //the period in seconds between payments
-            gasPrice, //the amount of tokens or eth to pay relayer (0 for free)
-            nonce, // to allow multiple subscriptions with the same parameters
-            signature
+        const subscriptionLicenseFrom = await ethers.getContract(
+            "SubscriptionLicense",
+            accounts[1]
         )
+        let cancelSubscription =
+            await subscriptionLicenseFrom.cancelSubscription(
+                fromAddress, //the subscriber
+                toAddress, //the publisher
+                mapCoinAddress, //the token address paid to the publisher
+                licensePrice, //the token amount paid to the publisher
+                periodSeconds, //the period in seconds between payments
+                gasPrice, //the amount of tokens or eth to pay relayer (0 for free)
+                nonce, // to allow multiple subscriptions with the same parameters
+                signature
+            )
         await cancelSubscription.wait()
         console.log("Subscription Canceled")
     }

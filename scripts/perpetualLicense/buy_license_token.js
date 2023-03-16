@@ -12,7 +12,7 @@ async function main() {
 
     console.log("Buying a Petpetual License Token...")
 
-    const transactionResponse = await perpetualLicense.mintToken({
+    const transactionResponse = await perpetualLicense.buyToken({
         value: ethers.utils.parseEther("0.01"),
     })
 
