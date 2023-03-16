@@ -10,11 +10,6 @@ describe("FixedSubscriptionLicense", async function () {
             "FixedSubscriptionLicense",
             deployer
         )
-        const sevenDays = 7 * 24 * 60 * 60
-        const oneMinute = 60
-
-        await ethers.provider.send("evm_increaseTime", [oneMinute])
-        await ethers.provider.send("evm_mine")
     })
 
     describe("buyToken", async function () {
@@ -77,6 +72,98 @@ describe("FixedSubscriptionLicense", async function () {
             )
         })
     })
+
+    describe("mintToken", async function () {
+        it("should revert if sender isn't the owner", async () => {
+            const accounts = await ethers.getSigners()
+            // Attempt to update the license price as a non-owner
+            await expect(
+                fixedSubscription
+                    .connect(accounts[1])
+                    .mintToken(accounts[2].address)
+            ).to.be.rejectedWith("Ownable: caller is not the owner")
+        })
+
+        it("should mint a new token if the caller is owner", async () => {
+            const accounts = await ethers.getSigners()
+            const licensePrice = await fixedSubscription.getLicensePrice()
+            const tokenId = await fixedSubscription.getTokenCounter()
+            await expect(fixedSubscription.mintToken(accounts[2].address))
+                .to.emit(fixedSubscription, "CreatedSubscriptionToken")
+                .withArgs(tokenId + 1, licensePrice)
+        })
+    })
+
+    describe("updateSubscription", async function () {
+        it("should return the correct expiration time for the give token after subscription updated", async () => {
+            // const sevenDays = 7 * 24 * 60 * 60
+            const oneMinute = 60
+
+            await ethers.provider.send("evm_increaseTime", [oneMinute])
+            await ethers.provider.send("evm_mine")
+
+            const accounts = await ethers.getSigners()
+            const fixedSubscriptionLicenseContractSecondPayer =
+                await fixedSubscription.connect(accounts[1])
+            const licensePrice =
+                await fixedSubscriptionLicenseContractSecondPayer.getLicensePrice()
+            const tokenId =
+                await fixedSubscriptionLicenseContractSecondPayer.getTokenCounter()
+            await expect(
+                fixedSubscriptionLicenseContractSecondPayer.buyToken({
+                    value: licensePrice,
+                })
+            )
+                .to.emit(
+                    fixedSubscriptionLicenseContractSecondPayer,
+                    "CreatedSubscriptionToken"
+                )
+                .withArgs(tokenId.toNumber() + 1, licensePrice)
+
+            const blockNumBefore = await ethers.provider.getBlockNumber()
+            const blockBefore = await ethers.provider.getBlock(blockNumBefore)
+            const timestampBefore = blockBefore.timestamp
+            // console.log(timestampBefore)
+            const expirationTime = await fixedSubscription.getExpirationTime(
+                tokenId.toNumber()
+            )
+            expect(expirationTime).to.equal(timestampBefore + 60 * 60 * 24 * 30)
+            // console.log(timestampBefore + 60 * 60 * 24 * 30)
+            // console.log("Expiration time initial", expirationTime.toNumber())
+
+            await ethers.provider.send("evm_increaseTime", [oneMinute])
+            await ethers.provider.send("evm_mine")
+
+            await expect(
+                fixedSubscriptionLicenseContractSecondPayer.updateSubscription(
+                    tokenId,
+                    {
+                        value: licensePrice,
+                    }
+                )
+            )
+                .to.emit(
+                    fixedSubscriptionLicenseContractSecondPayer,
+                    "UpdatedSubscriptionToken"
+                )
+                .withArgs(tokenId.toNumber(), licensePrice)
+
+            const blockNumAfter = await ethers.provider.getBlockNumber()
+            const blockAfter = await ethers.provider.getBlock(blockNumAfter)
+            const timestampAfter = blockAfter.timestamp
+            // console.log(timestampAfter)
+            const expirationTimeAfterUpdate =
+                await fixedSubscription.getExpirationTime(tokenId.toNumber())
+            // console.log(
+            //     "Expiration time after",
+            //     expirationTimeAfterUpdate.toNumber()
+            // )
+            expect(expirationTimeAfterUpdate).to.equal(
+                expirationTime.toNumber() + 60 * 60 * 24 * 30
+            )
+        })
+    })
+
     describe("getExpirationTime", async function () {
         it("should return the correct expiration time for the give token", async () => {
             const accounts = await ethers.getSigners()
