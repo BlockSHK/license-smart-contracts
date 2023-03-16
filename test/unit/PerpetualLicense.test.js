@@ -85,6 +85,46 @@ describe("PerpetualLicense", async function () {
             expect(licensePrice).to.equal(ethers.utils.parseEther("0.01"))
         })
     })
+
+    describe("tokenURI", async function () {
+        it("should return the token URI", async () => {
+            const accounts = await ethers.getSigners()
+            const perpetualLicenseContractSecondPayer =
+                await perpetualLicense.connect(accounts[1])
+            const licensePrice =
+                await perpetualLicenseContractSecondPayer.getLicensePrice()
+            const tokenId =
+                await perpetualLicenseContractSecondPayer.getTokenCounter()
+
+            // Buy the token
+            await expect(
+                perpetualLicenseContractSecondPayer.buyToken({
+                    value: licensePrice,
+                })
+            )
+                .to.emit(
+                    perpetualLicenseContractSecondPayer,
+                    "CreatedLicenseToken"
+                )
+                .withArgs(tokenId.toNumber() + 1, licensePrice)
+
+            const tokenURI = await perpetualLicenseContractSecondPayer.tokenURI(
+                tokenId.toNumber()
+            )
+            expect(tokenURI).to.be.equal(
+                "data:application/json;base64,eyJuYW1lIjoiR29vZ2xlIiwibGljZW5zZSBuYW1lIjoiR29vZ2xlLWJhcmQtcGVycGV0dWFsIiwibGljZW5zZSBUeXBlIjoiUGVycGV0dWFsIiwicHJpY2UiOiIxMDAwMDAwMDAwMDAwMDAwMCIsInRva2VuSUQiOiIwIn0="
+            )
+        })
+
+        it("Fails when call the token URI of non existance token ID", async () => {
+            await expect(
+                perpetualLicense.tokenURI(1)
+            ).to.be.revertedWithCustomError(
+                perpetualLicense,
+                "ERC721Metadata__URI_QueryFor_NonExistentToken"
+            )
+        })
+    })
     describe("updateLicensePrice", () => {
         it("allows the owner to update the license price", async () => {
             const newLicensePrice = 2000
