@@ -95,7 +95,7 @@ describe("FixedSubscriptionLicense", async function () {
     })
 
     describe("updateSubscription", async function () {
-        it("should return the correct expiration time for the give token after subscription updated", async () => {
+        it("should return the current expiration time + period as expiration time for the give token after subscription updated before subscription ended", async () => {
             // const sevenDays = 7 * 24 * 60 * 60
             const oneMinute = 60
 
@@ -160,6 +160,126 @@ describe("FixedSubscriptionLicense", async function () {
             // )
             expect(expirationTimeAfterUpdate).to.equal(
                 expirationTime.toNumber() + 60 * 60 * 24 * 30
+            )
+        })
+
+        it("should return the current block time + period as expiration time for the give token after subscription updated after subscription ended", async () => {
+            const fourtyDays = 40 * 24 * 60 * 60
+            const oneMinute = 60
+
+            await ethers.provider.send("evm_increaseTime", [oneMinute])
+            await ethers.provider.send("evm_mine")
+
+            const accounts = await ethers.getSigners()
+            const fixedSubscriptionLicenseContractSecondPayer =
+                await fixedSubscription.connect(accounts[1])
+            const licensePrice =
+                await fixedSubscriptionLicenseContractSecondPayer.getLicensePrice()
+            const tokenId =
+                await fixedSubscriptionLicenseContractSecondPayer.getTokenCounter()
+            await expect(
+                fixedSubscriptionLicenseContractSecondPayer.buyToken({
+                    value: licensePrice,
+                })
+            )
+                .to.emit(
+                    fixedSubscriptionLicenseContractSecondPayer,
+                    "CreatedSubscriptionToken"
+                )
+                .withArgs(tokenId.toNumber() + 1, licensePrice)
+
+            const blockNumBefore = await ethers.provider.getBlockNumber()
+            const blockBefore = await ethers.provider.getBlock(blockNumBefore)
+            const timestampBefore = blockBefore.timestamp
+            // console.log(timestampBefore)
+            const expirationTime = await fixedSubscription.getExpirationTime(
+                tokenId.toNumber()
+            )
+            expect(expirationTime).to.equal(timestampBefore + 60 * 60 * 24 * 30)
+            // console.log(timestampBefore + 60 * 60 * 24 * 30)
+            // console.log("Expiration time initial", expirationTime.toNumber())
+
+            await ethers.provider.send("evm_increaseTime", [fourtyDays])
+            await ethers.provider.send("evm_mine")
+
+            await expect(
+                fixedSubscriptionLicenseContractSecondPayer.updateSubscription(
+                    tokenId,
+                    {
+                        value: licensePrice,
+                    }
+                )
+            )
+                .to.emit(
+                    fixedSubscriptionLicenseContractSecondPayer,
+                    "UpdatedSubscriptionToken"
+                )
+                .withArgs(tokenId.toNumber(), licensePrice)
+
+            const blockNumAfter = await ethers.provider.getBlockNumber()
+            const blockAfter = await ethers.provider.getBlock(blockNumAfter)
+            const timestampAfter = blockAfter.timestamp
+            // console.log(timestampAfter)
+            const expirationTimeAfterUpdate =
+                await fixedSubscription.getExpirationTime(tokenId.toNumber())
+            // console.log(
+            //     "Expiration time after",
+            //     expirationTimeAfterUpdate.toNumber()
+            // )
+            expect(expirationTimeAfterUpdate).to.equal(
+                timestampAfter + 60 * 60 * 24 * 30
+            )
+        })
+
+        it("update subscription should revert if sender doesn't send enough ETH", async () => {
+            // const sevenDays = 7 * 24 * 60 * 60
+            const oneMinute = 60
+
+            await ethers.provider.send("evm_increaseTime", [oneMinute])
+            await ethers.provider.send("evm_mine")
+
+            const accounts = await ethers.getSigners()
+            const fixedSubscriptionLicenseContractSecondPayer =
+                await fixedSubscription.connect(accounts[1])
+            const licensePrice =
+                await fixedSubscriptionLicenseContractSecondPayer.getLicensePrice()
+            const tokenId =
+                await fixedSubscriptionLicenseContractSecondPayer.getTokenCounter()
+            await expect(
+                fixedSubscriptionLicenseContractSecondPayer.buyToken({
+                    value: licensePrice,
+                })
+            )
+                .to.emit(
+                    fixedSubscriptionLicenseContractSecondPayer,
+                    "CreatedSubscriptionToken"
+                )
+                .withArgs(tokenId.toNumber() + 1, licensePrice)
+
+            const blockNumBefore = await ethers.provider.getBlockNumber()
+            const blockBefore = await ethers.provider.getBlock(blockNumBefore)
+            const timestampBefore = blockBefore.timestamp
+            // console.log(timestampBefore)
+            const expirationTime = await fixedSubscription.getExpirationTime(
+                tokenId.toNumber()
+            )
+            expect(expirationTime).to.equal(timestampBefore + 60 * 60 * 24 * 30)
+            // console.log(timestampBefore + 60 * 60 * 24 * 30)
+            // console.log("Expiration time initial", expirationTime.toNumber())
+
+            await ethers.provider.send("evm_increaseTime", [oneMinute])
+            await ethers.provider.send("evm_mine")
+
+            await expect(
+                fixedSubscriptionLicenseContractSecondPayer.updateSubscription(
+                    tokenId,
+                    {
+                        value: licensePrice.div(10),
+                    }
+                )
+            ).to.be.revertedWithCustomError(
+                fixedSubscription,
+                "SubscriptionLicense__NeedMoreETHSent"
             )
         })
     })

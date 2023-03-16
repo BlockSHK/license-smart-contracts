@@ -58,6 +58,27 @@ describe("PerpetualLicense", async function () {
             expect(event.args.licensePrice).to.equal(licensePrice)
         })
     })
+
+    describe("mintToken", async function () {
+        it("should revert if sender isn't the owner", async () => {
+            const accounts = await ethers.getSigners()
+            // Attempt to update the license price as a non-owner
+            await expect(
+                perpetualLicense
+                    .connect(accounts[1])
+                    .mintToken(accounts[2].address)
+            ).to.be.rejectedWith("Ownable: caller is not the owner")
+        })
+
+        it("should mint a new token if the caller is owner", async () => {
+            const accounts = await ethers.getSigners()
+            const licensePrice = await perpetualLicense.getLicensePrice()
+            const tokenId = await perpetualLicense.getTokenCounter()
+            await expect(perpetualLicense.mintToken(accounts[2].address))
+                .to.emit(perpetualLicense, "CreatedLicenseToken")
+                .withArgs(tokenId + 1, licensePrice)
+        })
+    })
     describe("getLicensePrice", async function () {
         it("should return the correct license price", async () => {
             const licensePrice = await perpetualLicense.getLicensePrice()
