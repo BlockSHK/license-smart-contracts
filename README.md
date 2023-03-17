@@ -83,6 +83,8 @@ yarn hardhat test
 
 And you'll see and output file called `gas-report.txt`
 
+
+[Click here](/gas-report.txt) to view the current gas report.
 ### Estimate gas cost in USD
 
 To get a USD estimation of gas cost, you'll need a `COINMARKETCAP_API_KEY` environment variable. You can get one for free from [CoinMarketCap](https://pro.coinmarketcap.com/signup). 
