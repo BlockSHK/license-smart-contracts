@@ -4,6 +4,7 @@ require("hardhat-gas-reporter")
 require("solidity-coverage")
 require("hardhat-deploy")
 require("dotenv").config()
+const { solidityDocgen } = require("solidity-docgen")
 /** @type import('hardhat/config').HardhatUserConfig */
 
 const COINMARKETCAP_API_KEY = process.env.COINMARKETCAP_API_KEY || ""
@@ -45,6 +46,13 @@ module.exports = {
                 },
             },
         ],
+        docgen: {
+            runOnCompile: true,
+            outputDir: "Documentation",
+            outputFile: "solidity-docs.json",
+            only: [],
+            except: [],
+        },
     },
     etherscan: {
         apiKey: ETHERSCAN_API_KEY,
