@@ -72,8 +72,8 @@ contract SubscriptionLicense {
         if(nextValidTimestamp[subscriptionHash]==type(uint).max){
           return false;
         }
-        return (block.timestamp <=
-                nextValidTimestamp[subscriptionHash].add(gracePeriodSeconds)
+        return (block.timestamp.add(gracePeriodSeconds) <=
+                nextValidTimestamp[subscriptionHash]
         );
     }
 
