@@ -115,4 +115,11 @@ The repository contains three main smart contracts, namely Perpetual License, Fi
 
 The call graph is a useful visualization tool to understand the relationships between different functions in the codebase. In this repository, the call graph can show the interactions between the three main contracts, Perpetual License, Fixed Subscription License, and Auto Renew Subscription License, along with the ERC20 token (Map Coin) used as payment. By illustrating the flow of data and value transfer between the contracts, the call graph can provide insights into the architecture of the repository and identify potential issues or inefficiencies in the code.
 
-![Call Graph Diagram](./Documentation/Contracts%20Call%20Graph.png)
+- Perpetual License Call Graph Diagram
+![Perpetual License Call Graph Diagram](./Documentation/Perpetual_License.png)
+- Fixed Subscription License Call Graph Diagram
+![Fixed Subscription License Call Graph Diagram](./Documentation/Fixed_Subscription_License.png)
+- Auto Renew Subscription License Call Graph Diagram
+![Auto Renew Subscription License Call Graph Diagram](./Documentation/Auto_Renew_Subscription_License.png)
+- Complete Call Graph Diagram
+![Complete Call Graph Diagram](./Documentation/Contracts%20Call%20Graph.png)
