@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
-
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "./PerpetualLicense.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-contract LicenseActivation {
+contract LicenseActivation is Ownable{
     using ECDSA for bytes32;
 
     event Activation(uint256 indexed tokenId, bytes32 indexed hash, address indexed customer);
@@ -13,7 +13,7 @@ contract LicenseActivation {
     PerpetualLicense private s_perpetualLicenseContract;
     mapping(uint256 => bool) private s_activationStatus;
 
-    function initialize(address perpetualLicenseContractAddress) external {
+    function initialize(address perpetualLicenseContractAddress) external onlyOwner {
         require(address(s_perpetualLicenseContract) == address(0), "Already initialized");
         s_perpetualLicenseContract = PerpetualLicense(perpetualLicenseContractAddress);
     }
