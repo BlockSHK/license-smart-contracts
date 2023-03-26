@@ -22,8 +22,8 @@ contract LicenseActivation is Ownable{
         require(!isLicenseActivated(tokenId), "License is already activated");
         address customer = s_perpetualLicenseContract.ownerOf(tokenId);
 
-        bytes32 messageHash = keccak256(abi.encodePacked(tokenId, hash, address(this)));
-        bytes32 ethSignedMessageHash = messageHash.toEthSignedMessageHash();
+        
+        bytes32 ethSignedMessageHash = hash.toEthSignedMessageHash();
 
         address signerAddress = ethSignedMessageHash.recover(signature);
         require(signerAddress == customer, "Invalid signature");

@@ -1,13 +1,22 @@
 const { deployments, ethers, getNamedAccounts } = require("hardhat")
 const { assert, expect } = require("chai")
+const ethSigUtil = require("eth-sig-util")
+const { Wallet } = require("@ethersproject/wallet")
+
 describe("PerpetualLicense", async function () {
-    let perpetualLicense
+    let perpetualLicense, licenseActivation
+    let newWallet
     const sendValue = ethers.utils.parseEther("1")
     beforeEach(async () => {
         const { deployer, secondPayer } = await getNamedAccounts()
         await deployments.fixture(["all"])
         perpetualLicense = await ethers.getContract(
             "PerpetualLicense",
+            deployer
+        )
+
+        licenseActivation = await ethers.getContract(
+            "LicenseActivation",
             deployer
         )
     })
@@ -287,6 +296,31 @@ describe("PerpetualLicense", async function () {
             // console.log("expected balance:", expectedBalance.toString())
 
             expect(ownerBalanceAfter).to.equal(expectedBalance)
+        })
+    })
+
+    describe("LicenseActivation", function () {
+        it("Should activate a license", async function () {
+            const accounts = await ethers.getSigners()
+            const licensePrice = await perpetualLicense.getLicensePrice()
+            const addr1 = accounts[1]
+            await perpetualLicense
+                .connect(addr1)
+                .buyToken({ value: licensePrice })
+
+            const tokenId = 0
+            const hash = ethers.utils.keccak256("0x1234")
+
+            const signature = await addr1.signMessage(
+                ethers.utils.arrayify(hash)
+            )
+
+            await licenseActivation
+                .connect(addr1)
+                .activateLicense(tokenId, hash, signature)
+            expect(
+                await licenseActivation.isLicenseActivated(tokenId)
+            ).to.equal(true)
         })
     })
 })
