@@ -17,6 +17,7 @@ contract PerpetualLicense is ERC721Royalty, Ownable {
     string private i_companyName;
     string private i_licenseType;
     string private i_licenseName;
+    string private i_licenseAgreementUrl;
 
     LicenseActivation private s_licenseActivationContract;
 
@@ -25,6 +26,7 @@ contract PerpetualLicense is ERC721Royalty, Ownable {
     constructor(
         string memory companyName,
         string memory licenseName,
+        string memory licenseAgreementUrl,
         uint256 licensePrice,
         uint96 royaltyPercentage,
         address licenseActivationContractAddress
@@ -33,6 +35,7 @@ contract PerpetualLicense is ERC721Royalty, Ownable {
         s_licensePrice = licensePrice;
         i_companyName = companyName;
         i_licenseName = licenseName;
+        i_licenseAgreementUrl = licenseAgreementUrl;
         i_licenseType = "Perpetual";
         _setDefaultRoyalty(msg.sender, royaltyPercentage * 100);
 
@@ -76,6 +79,8 @@ contract PerpetualLicense is ERC721Royalty, Ownable {
                                 i_companyName, 
                                 '","license name":"',
                                 i_licenseName,
+                                '","license agreement Url":"',
+                                i_licenseAgreementUrl,
                                 '","license Type":"',
                                 i_licenseType,
                                 '","price":"',

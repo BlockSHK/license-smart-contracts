@@ -121,7 +121,7 @@ describe("PerpetualLicense", async function () {
                 tokenId.toNumber()
             )
             expect(tokenURI).to.be.equal(
-                "data:application/json;base64,eyJuYW1lIjoiR29vZ2xlIiwibGljZW5zZSBuYW1lIjoiR29vZ2xlLWJhcmQtcGVycGV0dWFsIiwibGljZW5zZSBUeXBlIjoiUGVycGV0dWFsIiwicHJpY2UiOiIxMDAwMDAwMDAwMDAwMDAwMCIsInRva2VuSUQiOiIwIn0="
+                "data:application/json;base64,eyJuYW1lIjoiR29vZ2xlIiwibGljZW5zZSBuYW1lIjoiR29vZ2xlLWJhcmQtcGVycGV0dWFsIiwibGljZW5zZSBhZ3JlZW1lbnQgVXJsIjoiaHR0cHM6Ly9pcGZzLmlvL2lwZnMvUW1abVg1aVRKYzNDOThkYmt3ckhNSnNUR0FUZHVZTkhDVW1xcHo3dDRpU1FwVyIsImxpY2Vuc2UgVHlwZSI6IlBlcnBldHVhbCIsInByaWNlIjoiMTAwMDAwMDAwMDAwMDAwMDAiLCJ0b2tlbklEIjoiMCJ9"
             )
         })
 

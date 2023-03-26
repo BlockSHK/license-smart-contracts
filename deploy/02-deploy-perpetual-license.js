@@ -18,8 +18,11 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 
     let licensePrice = "10000000000000000" //0.01 ETH
     let companyName = "Google"
-    let licenseActivationAddress = LicenseActivation.address
     let licenseName = "Google-bard-perpetual"
+    let licenseAgreementUrl =
+        "https://ipfs.io/ipfs/QmZmX5iTJc3C98dbkwrHMJsTGATduYNHCUmqpz7t4iSQpW"
+    let licenseActivationAddress = LicenseActivation.address
+
     let royaltyPercentage = "1" //1%
 
     log(
@@ -28,6 +31,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     arguments = [
         companyName,
         licenseName,
+        licenseAgreementUrl,
         licensePrice,
         royaltyPercentage,
         licenseActivationAddress,
