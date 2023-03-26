@@ -300,10 +300,13 @@ describe("PerpetualLicense", async function () {
     })
 
     describe("LicenseActivation", function () {
+        let accounts, addr1
+        beforeEach(async function () {
+            accounts = await ethers.getSigners()
+            addr1 = accounts[1]
+        })
         it("Should activate a license", async function () {
-            const accounts = await ethers.getSigners()
             const licensePrice = await perpetualLicense.getLicensePrice()
-            const addr1 = accounts[1]
             await perpetualLicense
                 .connect(addr1)
                 .buyToken({ value: licensePrice })
@@ -321,6 +324,115 @@ describe("PerpetualLicense", async function () {
             expect(
                 await licenseActivation.isLicenseActivated(tokenId)
             ).to.equal(true)
+        })
+
+        it("Should deactivate an activated license", async function () {
+            const licensePrice = await perpetualLicense.getLicensePrice()
+            await perpetualLicense
+                .connect(addr1)
+                .buyToken({ value: licensePrice })
+
+            const tokenId = 0
+            const hash = ethers.utils.keccak256("0x1234")
+
+            const signature = await addr1.signMessage(
+                ethers.utils.arrayify(hash)
+            )
+
+            await licenseActivation
+                .connect(addr1)
+                .activateLicense(tokenId, hash, signature)
+            expect(
+                await licenseActivation.isLicenseActivated(tokenId)
+            ).to.equal(true)
+
+            await licenseActivation.connect(addr1).deactivateLicense(tokenId)
+            expect(
+                await licenseActivation.isLicenseActivated(tokenId)
+            ).to.equal(false)
+        })
+
+        it("Should fail to activate an already activated license", async function () {
+            const licensePrice = await perpetualLicense.getLicensePrice()
+            await perpetualLicense
+                .connect(addr1)
+                .buyToken({ value: licensePrice })
+
+            const tokenId = 0
+            const hash = ethers.utils.keccak256("0x1234")
+
+            const signature = await addr1.signMessage(
+                ethers.utils.arrayify(hash)
+            )
+
+            await licenseActivation
+                .connect(addr1)
+                .activateLicense(tokenId, hash, signature)
+            expect(
+                await licenseActivation.isLicenseActivated(tokenId)
+            ).to.equal(true)
+
+            await expect(
+                licenseActivation
+                    .connect(addr1)
+                    .activateLicense(tokenId, hash, signature)
+            ).to.be.revertedWith("License is already activated")
+        })
+
+        it("Should fail to deactivate a non-activated license", async function () {
+            const tokenId = 0
+
+            await expect(
+                licenseActivation.connect(addr1).deactivateLicense(tokenId)
+            ).to.be.revertedWith("License is not activated")
+        })
+
+        it("Should fail to deactivate a license owned by another user", async function () {
+            const licensePrice = await perpetualLicense.getLicensePrice()
+            await perpetualLicense
+                .connect(addr1)
+                .buyToken({ value: licensePrice })
+
+            const tokenId = 0
+            const hash = ethers.utils.keccak256("0x1234")
+
+            const signature = await addr1.signMessage(
+                ethers.utils.arrayify(hash)
+            )
+
+            await licenseActivation
+                .connect(addr1)
+                .activateLicense(tokenId, hash, signature)
+            expect(
+                await licenseActivation.isLicenseActivated(tokenId)
+            ).to.equal(true)
+
+            const addr2 = accounts[2]
+
+            await expect(
+                licenseActivation.connect(addr2).deactivateLicense(tokenId)
+            ).to.be.revertedWith("Only the license owner can deactivate")
+        })
+
+        it("Should fail to activate a license with an invalid signature", async function () {
+            const licensePrice = await perpetualLicense.getLicensePrice()
+            await perpetualLicense
+                .connect(addr1)
+                .buyToken({ value: licensePrice })
+
+            const tokenId = 0
+            const hash = ethers.utils.keccak256("0x1234")
+
+            const addr2 = accounts[2]
+            const signature = await addr2.signMessage(
+                ethers.utils.arrayify(hash)
+            )
+
+            await expect(
+                licenseActivation
+                    .connect(addr1)
+                    .activateLicense(tokenId, hash, signature)
+            ).to.be.revertedWith("Invalid signature")
         })
     })
 })
