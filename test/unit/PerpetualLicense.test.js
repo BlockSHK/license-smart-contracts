@@ -325,7 +325,34 @@ describe("PerpetualLicense", async function () {
                 await licenseActivation.isLicenseActivated(tokenId)
             ).to.equal(true)
         })
+        it("Should fait to transfer and activated license", async function () {
+            const licensePrice = await perpetualLicense.getLicensePrice()
+            await perpetualLicense
+                .connect(addr1)
+                .buyToken({ value: licensePrice })
 
+            const tokenId = 0
+            const hash = ethers.utils.keccak256("0x1234")
+
+            const signature = await addr1.signMessage(
+                ethers.utils.arrayify(hash)
+            )
+
+            await licenseActivation
+                .connect(addr1)
+                .activateLicense(tokenId, hash, signature)
+            expect(
+                await licenseActivation.isLicenseActivated(tokenId)
+            ).to.equal(true)
+
+            const perpetualLicenseContractSecondPayer =
+                await perpetualLicense.connect(accounts[1])
+            await expect(
+                perpetualLicenseContractSecondPayer[
+                    "safeTransferFrom(address,address,uint256)"
+                ](accounts[1].address, accounts[2].address, tokenId)
+            ).to.be.revertedWith("Cannot transfer an activated license")
+        })
         it("Should deactivate an activated license", async function () {
             const licensePrice = await perpetualLicense.getLicensePrice()
             await perpetualLicense
