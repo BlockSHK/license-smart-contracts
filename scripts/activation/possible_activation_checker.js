@@ -1,24 +1,34 @@
-const { ethers } = require("hardhat")
+const { ethers, getNamedAccounts } = require("hardhat")
 const Web3 = require("web3")
+const fs = require("fs")
+const path = require("path")
 
 async function checkActivation() {
+    const artifactPath = path.join(
+        __dirname,
+        "../../artifacts/contracts/LicenseActivation.sol/LicenseActivation.json"
+    )
+
+    const artifact = JSON.parse(fs.readFileSync(artifactPath, "utf8"))
+    const licenseActivationABI = artifact.abi
     const accounts = await ethers.getSigners()
 
     // Get the contract artifact
-    const LicenseActivation = await ethers.getContractFactory(
-        "LicenseActivation"
+    const LicenseActivation = await ethers.getContract(
+        "LicenseActivation",
+        accounts[0]
     )
 
     // Get the contract address
     const contractAddress = LicenseActivation.address
 
     // Get the contract ABI
-    const licenseActivationABI = LicenseActivation.interface.format()
 
     // Connect to Ethereum network
-    const web3 = new Web3(
-        "https://eth-goerli.g.alchemy.com/v2/wLpA-TL3WxjCfKMfTcaxJQ7fL6MIQ1mP"
-    )
+    // const web3 = new Web3(
+    //     "https://eth-goerli.g.alchemy.com/v2/wLpA-TL3WxjCfKMfTcaxJQ7fL6MIQ1mP"
+    // )
+    const web3 = new Web3("http://localhost:8545")
 
     // Create the contract instance
     const licenseActivationContract = new web3.eth.Contract(
@@ -65,3 +75,8 @@ async function checkActivation() {
 }
 
 checkActivation()
+    .then(() => process.exit(0))
+    .catch((error) => {
+        console.error(error)
+        process.exit(1)
+    })

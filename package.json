@@ -25,6 +25,7 @@
     "base64-sol": "^1.1.0",
     "dotenv": "^16.0.3",
     "eth-sig-util": "^3.0.1",
-    "openzeppelin-solidity": "openzeppelin/openzeppelin-contracts"
+    "openzeppelin-solidity": "openzeppelin/openzeppelin-contracts",
+    "web3": "^1.9.0"
   }
 }
