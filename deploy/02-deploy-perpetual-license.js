@@ -8,13 +8,34 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     const { deployer } = await getNamedAccounts()
     const chainId = network.config.chainId
 
+    log("-------------License Activation Contracts----------------")
+    const LicenseActivation = await deploy("LicenseActivation", {
+        from: deployer,
+        args: [],
+        log: true,
+        waitConfirmations: network.config.blockConfirmations || 1,
+    })
+
     let licensePrice = "10000000000000000" //0.01 ETH
     let companyName = "Google"
     let licenseName = "Google-bard-perpetual"
+    let licenseAgreementUrl =
+        "https://ipfs.io/ipfs/QmZmX5iTJc3C98dbkwrHMJsTGATduYNHCUmqpz7t4iSQpW"
+    let licenseActivationAddress = LicenseActivation.address
+
     let royaltyPercentage = "1" //1%
 
-    log("----------------------------------------------------")
-    arguments = [companyName, licenseName, licensePrice, royaltyPercentage]
+    log(
+        "------------Deploy Perpetual Licensing with activation Contract-----------------"
+    )
+    arguments = [
+        companyName,
+        licenseName,
+        licenseAgreementUrl,
+        licensePrice,
+        royaltyPercentage,
+        licenseActivationAddress,
+    ]
     const tokenLicense = await deploy("PerpetualLicense", {
         from: deployer,
         args: arguments,
@@ -30,6 +51,26 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         log("Verifying...")
         await verify(tokenLicense.address, arguments)
     }
+
+    log(
+        "------------Update License Activation with Perpetual License Address-----------------"
+    )
+
+    const perpetualLicense = await ethers.getContract(
+        "PerpetualLicense",
+        deployer
+    )
+    const ActivationContract = await ethers.getContract(
+        "LicenseActivation",
+        deployer
+    )
+    const transactionResponse = await ActivationContract.initialize(
+        perpetualLicense.address
+    )
+    await transactionResponse.wait()
+    console.log(
+        `License Activation Contract initialized with Perpetual License Address :- ${perpetualLicense.address}`
+    )
 }
 
 module.exports.tags = ["all", "token"]

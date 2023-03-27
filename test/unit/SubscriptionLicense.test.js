@@ -794,13 +794,22 @@ describe("AutoRenewSubscriptionLicense", async function () {
         })
     })
 
-    describe("getILicenseName", async function () {
+    describe("getLicenseName", async function () {
         it("should return the correct license name", async () => {
-            const licenseName = await subscriptionLicense.getILicenseName()
+            const licenseName = await subscriptionLicense.getLicenseName()
             expect(licenseName).to.equal("Microsoft")
         })
     })
 
+    describe("getLicenseAgreementUrl", async function () {
+        it("should return the correct license name", async () => {
+            const licenseName =
+                await subscriptionLicense.getLicenseAgreementUrl()
+            expect(licenseName).to.equal(
+                "https://ipfs.io/ipfs/QmZmX5iTJc3C98dbkwrHMJsTGATduYNHCUmqpz7t4iSQpW"
+            )
+        })
+    })
     describe("getSubscriptionHash", async function () {
         it("should get the subscription hash without a error", async () => {
             const oneMinute = 60

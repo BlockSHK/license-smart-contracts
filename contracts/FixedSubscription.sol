@@ -19,6 +19,7 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
     string private i_licenseType;
     string private i_licenseName;
     uint256 private i_periodSecond;
+    string private i_licenseAgreementUrl;
 
     mapping(uint256 => uint256) public startTimestamp;
     mapping(uint256 => uint256) public expirationTimestamp;
@@ -30,6 +31,7 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
     constructor(
         string memory companyName,
         string memory licenseName,
+        string memory licenseAgreementUrl,
         uint256  licensePrice,
         uint256 subscriptionPeriodSecond
     ) ERC721("Software License", "SHK") {
@@ -39,6 +41,7 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
         i_licenseName = licenseName;
         i_licenseType = "Subscription";
         i_periodSecond = subscriptionPeriodSecond; 
+        i_licenseAgreementUrl = licenseAgreementUrl;
     }
 
 
@@ -100,6 +103,8 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
                                 i_companyName, 
                                 '","license name":"',
                                 i_licenseName,
+                                '","license agreement Url":"',
+                                i_licenseAgreementUrl,
                                 '","license Type":"',
                                 i_licenseType,
                                 '","price":"',
