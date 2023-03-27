@@ -19,6 +19,7 @@ contract SubscriptionLicense {
     uint256 private requiredPeriodSeconds;
     uint256 private requiredGasPrice;
     string private i_licenseName;
+    string private i_licenseAgreementUrl;
 
     mapping(bytes32 => uint256) private nextValidTimestamp;
 
@@ -48,7 +49,8 @@ contract SubscriptionLicense {
         uint256 _tokenAmount,
         uint256 _periodSeconds,
         uint256 _gasPrice,
-        string memory licenseName
+        string memory licenseName,
+        string memory licenseAgreementUrl
     ) {
         requiredToAddress=_toAddress;
         requiredTokenAddress=_tokenAddress;
@@ -57,6 +59,7 @@ contract SubscriptionLicense {
         requiredGasPrice=_gasPrice;
         author=msg.sender;
         i_licenseName = licenseName;
+        i_licenseAgreementUrl = licenseAgreementUrl;
     }
 
 
@@ -284,7 +287,10 @@ contract SubscriptionLicense {
         return requiredGasPrice;
     }
 
-    function getILicenseName() external view returns (string memory) {
+    function getLicenseName() external view returns (string memory) {
         return i_licenseName;
+    }
+    function getLicenseAgreementUrl() external view returns (string memory) {
+        return i_licenseAgreementUrl;
     }
 }
