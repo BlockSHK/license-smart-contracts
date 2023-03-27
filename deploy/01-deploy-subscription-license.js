@@ -14,7 +14,8 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     let periodSeconds = "60"
     let gasPrice = "1"
     let licenseName = "Microsoft"
-
+    let licenseAgreementUrl =
+        "https://ipfs.io/ipfs/QmZmX5iTJc3C98dbkwrHMJsTGATduYNHCUmqpz7t4iSQpW"
     log("----------------------------------------------------")
     arguments = [
         toAddress,
@@ -23,6 +24,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         periodSeconds,
         gasPrice,
         licenseName,
+        licenseAgreementUrl,
     ]
     const mapLicense = await deploy("SubscriptionLicense", {
         from: deployer,

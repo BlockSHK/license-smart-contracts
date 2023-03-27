@@ -11,12 +11,15 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     let licensePrice = "10000000000000000" //0.01 ETH
     let companyName = "Google"
     let licenseName = "Google-bard-perpetual"
+    let licenseAgreementUrl =
+        "https://ipfs.io/ipfs/QmZmX5iTJc3C98dbkwrHMJsTGATduYNHCUmqpz7t4iSQpW"
     let subscriptionPeriodSecond = 60 * 60 * 24 * 30
 
     log("----------------------------------------------------")
     arguments = [
         companyName,
         licenseName,
+        licenseAgreementUrl,
         licensePrice,
         subscriptionPeriodSecond,
     ]
