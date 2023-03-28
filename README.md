@@ -108,7 +108,7 @@ yarn hardhat verify --constructor-args arguments.js DEPLOYED_CONTRACT_ADDRESS
 The repository contains three main smart contracts, namely Perpetual License, Fixed Subscription License, and Auto Renew Subscription License. Auto Renew Subscription License contract utilize an ERC20 token called Map Coin for payment.
 
 ### Contracts Documentaion
-- [Perpetual License contract](./Documentation/Perpetual_License.pdf)
+- [Perpetual License contract](./Documentation/Perpetual%20License%20with%20License%20Activation%20Contract.pdf)
 - [Fixed Subscription License contract](./Documentation/Fixed%20Subscription%20License.pdf)
 - [Auto Renew Subscription License contract](./Documentation/Auto%20Subscription%20License.pdf)
 ### Call Graph
