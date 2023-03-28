@@ -108,7 +108,7 @@ yarn hardhat verify --constructor-args arguments.js DEPLOYED_CONTRACT_ADDRESS
 The repository contains three main smart contracts, namely Perpetual License, Fixed Subscription License, and Auto Renew Subscription License. Auto Renew Subscription License contract utilize an ERC20 token called Map Coin for payment.
 
 ### Contracts Documentaion
-- [Perpetual License contract](./Documentation/Perpetual_License.pdf)
+- [Perpetual License contract](./Documentation/Perpetual%20License%20with%20License%20Activation%20Contract.pdf)
 - [Fixed Subscription License contract](./Documentation/Fixed%20Subscription%20License.pdf)
 - [Auto Renew Subscription License contract](./Documentation/Auto%20Subscription%20License.pdf)
 ### Call Graph
@@ -116,10 +116,12 @@ The repository contains three main smart contracts, namely Perpetual License, Fi
 The call graph is a useful visualization tool to understand the relationships between different functions in the codebase. In this repository, the call graph can show the interactions between the three main contracts, Perpetual License, Fixed Subscription License, and Auto Renew Subscription License, along with the ERC20 token (Map Coin) used as payment. By illustrating the flow of data and value transfer between the contracts, the call graph can provide insights into the architecture of the repository and identify potential issues or inefficiencies in the code.
 
 - Perpetual License Call Graph Diagram
-![Perpetual License Call Graph Diagram](./Documentation/Perpetual_License.png)
+![Perpetual License Call Graph Diagram](./Documentation/PerpetualLicense.png)
+- License Activation Contract Call Graph Diagram
+![License Activation Contract Call Graph Diagram](./Documentation/LicenseActivation.png)
 - Fixed Subscription License Call Graph Diagram
-![Fixed Subscription License Call Graph Diagram](./Documentation/Fixed_Subscription_License.png)
+![Fixed Subscription License Call Graph Diagram](./Documentation/FixedSubscriptionLicense.png)
 - Auto Renew Subscription License Call Graph Diagram
-![Auto Renew Subscription License Call Graph Diagram](./Documentation/Auto_Renew_Subscription_License.png)
+![Auto Renew Subscription License Call Graph Diagram](./Documentation/AutoRenewSubscriptionLicense.png)
 - Complete Call Graph Diagram
-![Complete Call Graph Diagram](./Documentation/Contracts%20Call%20Graph.png)
+![Complete Call Graph Diagram](./Documentation/AllContracts.png)
