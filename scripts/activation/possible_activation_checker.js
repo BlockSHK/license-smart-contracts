@@ -18,7 +18,7 @@ async function checkActivation() {
         "LicenseActivation",
         accounts[0]
     )
-
+    const hash = ethers.utils.keccak256("0x1234")
     // Get the contract address
     const contractAddress = LicenseActivation.address
 
@@ -41,7 +41,7 @@ async function checkActivation() {
     const activationEvents = await licenseActivationContract.getPastEvents(
         "Activation",
         {
-            filter: { tokenId: tokenId },
+            filter: { tokenId: tokenId, hash: hash },
             fromBlock: 0,
             toBlock: "latest",
         }
