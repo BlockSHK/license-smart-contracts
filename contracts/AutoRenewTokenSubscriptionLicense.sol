@@ -217,12 +217,23 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
         return (transferingAllowed[tokenId]==1);
     }
     function withdraw() public onlyOwner {
-        uint256 amount = address(this).balance;
-        (bool success, ) = payable(msg.sender).call{value: amount}("");
-        if (!success) {
-            revert SubscriptionLicense__TransferFailed();
-        }
+
+        uint256 balance = ERC20(i_tokenAddress).balanceOf(address(this));
+
+        uint256 startingBalance = ERC20(i_tokenAddress).balanceOf(owner());
+
+        ERC20(i_tokenAddress).transferFrom(address(this),owner(),balance);
+        require(
+          (startingBalance+balance) == ERC20(i_tokenAddress).balanceOf(owner()),
+          "ERC20 Balance did not change correctly"
+        );
+
+        require(
+          checkSuccess(),
+          "Subscription::withdraw TransferFrom failed"
+          );
     }
+
     function _beforeTokenTransfer(address from, address to, uint256 firsTokenId, uint256 batchSize) internal virtual override {
         require(transferingAllowed[firsTokenId] == 1 , "Prior Approval needed for transfer of the tokens");
         super._beforeTokenTransfer(from, to, firsTokenId,batchSize);
