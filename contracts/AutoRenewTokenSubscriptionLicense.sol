@@ -4,15 +4,15 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "base64-sol/base64.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 error ERC721Metadata__URI_QueryFor_NonExistentToken();
 error SubscriptionLicense__TransferFailed();
 error SubscriptionLicense__NeedMoreETHSent();
 
-contract FixedSubscriptionLicense is ERC721,Ownable{
-    using SafeMath for uint256;
+contract AutoRenewSubscriptionLicense is ERC721,Ownable{
+    using SafeERC20 for IERC20;
 
     uint256 private s_tokenCounter;
     uint256 private s_licensePrice;
@@ -28,8 +28,8 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
     mapping(uint256 => uint256) public expirationTimestamp;
     mapping(uint256 => uint256) public transferingAllowed;
 
-    event CreatedSubscriptionToken(uint256 indexed tokenId, uint256 licensePrice);
     event UpdatedSubscriptionToken(uint256 indexed tokenId, uint256 licensePrice);
+    event NewSubscriptionToken(uint256 indexed tokenId, uint256 licensePrice);
 
     constructor(
         string memory companyName,
@@ -54,94 +54,91 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
 
     function buyToken() public {
 
-        uint256 allowance = ERC20(i_tokenAddress).allowance(msg.sender, address(this));
-        uint256 balance = ERC20(i_tokenAddress).balanceOf(msg.sender);
+        uint256 allowance = IERC20(i_tokenAddress).allowance(msg.sender, address(this));
+        uint256 balance = IERC20(i_tokenAddress).balanceOf(msg.sender);
 
-        require( allowance >= s_licensePrice.add(s_gasPrice) && balance >= s_licensePrice.add(s_gasPrice), "Subscription is not ready or not enough balance or allowance");
+        require( allowance >= s_licensePrice +s_gasPrice && balance >= s_licensePrice + s_gasPrice, "Subscription is not ready or not enough balance or allowance");
 
 
         transferingAllowed[s_tokenCounter] = 1;
         _safeMint(msg.sender, s_tokenCounter);
         startTimestamp[s_tokenCounter] = block.timestamp;
-        expirationTimestamp[s_tokenCounter] = block.timestamp.add(i_periodSecond);
+        expirationTimestamp[s_tokenCounter] = block.timestamp + i_periodSecond;
         transferingAllowed[s_tokenCounter] = 0;
 
-        uint256 startingBalance = ERC20(i_tokenAddress).balanceOf(address(this));
-        ERC20(i_tokenAddress).transferFrom(msg.sender,address(this),s_licensePrice);
+        uint256 startingBalance = IERC20(i_tokenAddress).balanceOf(address(this));
+        IERC20(i_tokenAddress).safeTransferFrom(msg.sender,address(this),s_licensePrice);
         require(
-          (startingBalance+s_licensePrice) == ERC20(i_tokenAddress).balanceOf(address(this)),
+          (startingBalance+s_licensePrice) == IERC20(i_tokenAddress).balanceOf(address(this)),
           "ERC20 Balance did not change correctly"
         );
 
-        require(
-          checkSuccess(),
-          "Subscription::buy Subscription Token  TransferFrom failed"
-          );
-
 
         s_tokenCounter = s_tokenCounter + 1;
-        emit CreatedSubscriptionToken(s_tokenCounter, s_licensePrice);
+
+        emit NewSubscriptionToken(s_tokenCounter - 1, s_licensePrice);
+
     }
 
     function mintToken(address customer) public onlyOwner {
 
-        uint256 allowance = ERC20(i_tokenAddress).allowance(customer, address(this));
-        uint256 balance = ERC20(i_tokenAddress).balanceOf(customer);
-
-        require( allowance >= s_licensePrice.add(s_gasPrice) && balance >= s_licensePrice.add(s_gasPrice), "Subscription is not ready or not enough balance or allowance");
-
-
         transferingAllowed[s_tokenCounter] = 1;
         _safeMint(customer, s_tokenCounter);
         startTimestamp[s_tokenCounter] = block.timestamp;
-        expirationTimestamp[s_tokenCounter] = block.timestamp.add(i_periodSecond);
+        expirationTimestamp[s_tokenCounter] = block.timestamp +i_periodSecond;
         transferingAllowed[s_tokenCounter] = 0;
 
-
-        uint256 startingBalance = ERC20(i_tokenAddress).balanceOf(address(this));
-        ERC20(i_tokenAddress).transferFrom(customer,address(this),s_licensePrice);
-        require(
-          (startingBalance+s_licensePrice) == ERC20(i_tokenAddress).balanceOf(address(this)),
-          "ERC20 Balance did not change correctly"
-        );
-
-        require(
-          checkSuccess(),
-          "Subscription::mint Subscription Token TransferFrom failed"
-          );
-
-
         s_tokenCounter = s_tokenCounter + 1;
-        emit CreatedSubscriptionToken(s_tokenCounter, s_licensePrice);
+        emit NewSubscriptionToken(s_tokenCounter - 1, s_licensePrice);
+
     }
 
     function updateSubscription(uint256 tokenId) public{
+        require( block.timestamp != uint256(0), "Subscription is canceled");
         require( block.timestamp >= expirationTimestamp[tokenId], "Subscription is still active");
 
-        uint256 allowance = ERC20(i_tokenAddress).allowance(ownerOf(tokenId), address(this));
-        uint256 balance = ERC20(i_tokenAddress).balanceOf(ownerOf(tokenId));
+        uint256 allowance = IERC20(i_tokenAddress).allowance(ownerOf(tokenId), address(this));
+        uint256 balance = IERC20(i_tokenAddress).balanceOf(ownerOf(tokenId));
 
-        require( allowance >= s_licensePrice.add(s_gasPrice) && balance >= s_licensePrice.add(s_gasPrice), "Subscription is not ready or not enough balance or allowance");
-        expirationTimestamp[tokenId] = block.timestamp.add(i_periodSecond);
+        require( allowance >= s_licensePrice + s_gasPrice && balance >= s_licensePrice + s_gasPrice, "Subscription is not ready or not enough balance or allowance");
+        expirationTimestamp[tokenId] = block.timestamp + i_periodSecond;
 
-        uint256 startingBalance = ERC20(i_tokenAddress).balanceOf(address(this));
-        ERC20(i_tokenAddress).transferFrom(ownerOf(tokenId),address(this),s_licensePrice);
+        uint256 startingBalance = IERC20(i_tokenAddress).balanceOf(address(this));
+        IERC20(i_tokenAddress).safeTransferFrom(ownerOf(tokenId),address(this),s_licensePrice);
         require(
-          (startingBalance+s_licensePrice) == ERC20(i_tokenAddress).balanceOf(address(this)),
+          (startingBalance+s_licensePrice) == IERC20(i_tokenAddress).balanceOf(address(this)),
           "ERC20 Balance did not change correctly"
         );
 
-        require(
-          checkSuccess(),
-          "Subscription::update Subscription TransferFrom failed"
-          );
 
         if (s_gasPrice > 0) {
-            ERC20(i_tokenAddress).transferFrom(ownerOf(tokenId), msg.sender, s_gasPrice);
-            require(
-                checkSuccess(),
-                "Subscription::update Subscription Failed to pay gas as from account"
-            );
+            IERC20(i_tokenAddress).safeTransferFrom(ownerOf(tokenId), msg.sender, s_gasPrice);
+
+        }
+        emit UpdatedSubscriptionToken(tokenId, s_licensePrice);
+    }
+
+    function reactivateSubscription(uint256 tokenId) public{
+        require(msg.sender == ownerOf(tokenId), "Only owner can cancel the subscription");
+        require( block.timestamp >= expirationTimestamp[tokenId], "Subscription is still active");
+
+        uint256 allowance = IERC20(i_tokenAddress).allowance(ownerOf(tokenId), address(this));
+        uint256 balance = IERC20(i_tokenAddress).balanceOf(ownerOf(tokenId));
+
+        require( allowance >= s_licensePrice + s_gasPrice && balance >= s_licensePrice + s_gasPrice, "Subscription is not ready or not enough balance or allowance");
+        expirationTimestamp[tokenId] = block.timestamp + i_periodSecond;
+
+        uint256 startingBalance = IERC20(i_tokenAddress).balanceOf(address(this));
+        IERC20(i_tokenAddress).safeTransferFrom(ownerOf(tokenId),address(this),s_licensePrice);
+        require(
+          (startingBalance+s_licensePrice) == IERC20(i_tokenAddress).balanceOf(address(this)),
+          "ERC20 Balance did not change correctly"
+        );
+
+
+        if (s_gasPrice > 0) {
+            IERC20(i_tokenAddress).safeTransferFrom(ownerOf(tokenId), msg.sender, s_gasPrice);
+
         }
         emit UpdatedSubscriptionToken(tokenId, s_licensePrice);
     }
@@ -207,9 +204,6 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
     }
 
     function isSubscriptionActive(uint256 tokenId) public view returns (bool) {
-        if(expirationTimestamp[tokenId]==type(uint).max){
-          return false;
-        }
         return (block.timestamp <= expirationTimestamp[tokenId]);
     }
 
@@ -218,20 +212,16 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
     }
     function withdraw() public onlyOwner {
 
-        uint256 balance = ERC20(i_tokenAddress).balanceOf(address(this));
+        uint256 balance = IERC20(i_tokenAddress).balanceOf(address(this));
 
-        uint256 startingBalance = ERC20(i_tokenAddress).balanceOf(owner());
+        uint256 startingBalance = IERC20(i_tokenAddress).balanceOf(owner());
 
-        ERC20(i_tokenAddress).transferFrom(address(this),owner(),balance);
+        IERC20(i_tokenAddress).safeTransfer(owner(), balance);
         require(
-          (startingBalance+balance) == ERC20(i_tokenAddress).balanceOf(owner()),
+          (startingBalance+balance) == IERC20(i_tokenAddress).balanceOf(owner()),
           "ERC20 Balance did not change correctly"
         );
 
-        require(
-          checkSuccess(),
-          "Subscription::withdraw TransferFrom failed"
-          );
     }
 
     function _beforeTokenTransfer(address from, address to, uint256 firsTokenId, uint256 batchSize) internal virtual override {
@@ -286,31 +276,9 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
     
     function cancelSubscription(uint256 tokenId) public  {
         require(msg.sender == ownerOf(tokenId), "Only owner can cancel the subscription");
+        require(block.timestamp != uint256(0), "Subscription is already canceled");
 
-        expirationTimestamp[tokenId]=type(uint).max;
+        expirationTimestamp[tokenId] = uint256(0);
     }
-
-    function checkSuccess(
-    )
-        private
-        pure
-        returns (bool)
-    {
-        uint256 returnValue = 0;
-        assembly {
-            switch returndatasize()
-            case 0x0 {
-                returnValue := 1
-            }
-            case 0x20 {
-                returndatacopy(0x0, 0x0, 0x20)
-                returnValue := mload(0x0)
-            }
-            default { }
-        }
-
-        return returnValue != 0;
-    }
-    
 
 }
