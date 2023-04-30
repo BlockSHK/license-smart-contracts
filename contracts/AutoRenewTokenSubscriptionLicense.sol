@@ -194,7 +194,9 @@ contract AutoRenewSubscriptionLicense is ERC721,Ownable{
     function getLicensePrice() public view returns (uint256) {
         return s_licensePrice ;
     }
-
+    function getGasPrice() public view returns (uint256) {
+        return s_gasPrice ;
+    }
     function getSubscritptionTimePeriod() public view returns (uint256) {
         return i_periodSecond ;
     }
