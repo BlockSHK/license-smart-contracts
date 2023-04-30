@@ -34,7 +34,7 @@ describe("PerpetualLicense", async function () {
             const tokenId = await perpetualLicense.getTokenCounter()
             await expect(perpetualLicense.buyToken({ value: licensePrice }))
                 .to.emit(perpetualLicense, "CreatedLicenseToken")
-                .withArgs(tokenId + 1, licensePrice)
+                .withArgs(tokenId, licensePrice)
         })
 
         it("should update the tokenCounter when a new token is minted", async () => {
@@ -63,7 +63,7 @@ describe("PerpetualLicense", async function () {
                 "CreatedLicenseToken event should be emitted"
             )
 
-            expect(event.args.tokenId).to.equal(tokenIdBefore.add(1))
+            expect(event.args.tokenId).to.equal(tokenIdBefore)
             expect(event.args.licensePrice).to.equal(licensePrice)
         })
     })
@@ -85,7 +85,7 @@ describe("PerpetualLicense", async function () {
             const tokenId = await perpetualLicense.getTokenCounter()
             await expect(perpetualLicense.mintToken(accounts[2].address))
                 .to.emit(perpetualLicense, "CreatedLicenseToken")
-                .withArgs(tokenId + 1, licensePrice)
+                .withArgs(tokenId, licensePrice)
         })
     })
     describe("getLicensePrice", async function () {
@@ -115,7 +115,7 @@ describe("PerpetualLicense", async function () {
                     perpetualLicenseContractSecondPayer,
                     "CreatedLicenseToken"
                 )
-                .withArgs(tokenId.toNumber() + 1, licensePrice)
+                .withArgs(tokenId.toNumber(), licensePrice)
 
             const tokenURI = await perpetualLicenseContractSecondPayer.tokenURI(
                 tokenId.toNumber()
@@ -187,7 +187,7 @@ describe("PerpetualLicense", async function () {
                     perpetualLicenseContractSecondPayer,
                     "CreatedLicenseToken"
                 )
-                .withArgs(tokenId.toNumber() + 1, licensePrice)
+                .withArgs(tokenId.toNumber(), licensePrice)
 
             // Transfer the token
             await perpetualLicenseContractSecondPayer[
@@ -256,7 +256,7 @@ describe("PerpetualLicense", async function () {
                     perpetualLicenseContractSecondPayer,
                     "CreatedLicenseToken"
                 )
-                .withArgs(tokenId.toNumber() + 1, licensePrice)
+                .withArgs(tokenId.toNumber(), licensePrice)
             const { deployer, secondPayer } = await getNamedAccounts()
             const ownerBalanceBefore = await ethers.provider.getBalance(
                 deployer

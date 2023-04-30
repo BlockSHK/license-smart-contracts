@@ -68,9 +68,9 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         perpetualLicense.address
     )
     await transactionResponse.wait()
-    console.log(
-        `License Activation Contract initialized with Perpetual License Address :- ${perpetualLicense.address}`
-    )
+    // console.log(
+    //     `License Activation Contract initialized with Perpetual License Address :- ${perpetualLicense.address}`
+    // )
 }
 
 module.exports.tags = ["all", "token"]

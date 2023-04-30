@@ -25,7 +25,7 @@ describe("FixedSubscriptionLicense", async function () {
             const tokenId = await fixedSubscription.getTokenCounter()
             await expect(fixedSubscription.buyToken({ value: licensePrice }))
                 .to.emit(fixedSubscription, "CreatedSubscriptionToken")
-                .withArgs(tokenId + 1, licensePrice)
+                .withArgs(tokenId, licensePrice)
         })
 
         it("should update the tokenCounter when a new token is minted", async () => {
@@ -54,7 +54,7 @@ describe("FixedSubscriptionLicense", async function () {
                 "CreatedLicenseToken event should be emitted"
             )
 
-            expect(event.args.tokenId).to.equal(tokenIdBefore.add(1))
+            expect(event.args.tokenId).to.equal(tokenIdBefore)
             expect(event.args.licensePrice).to.equal(licensePrice)
         })
 
@@ -90,7 +90,7 @@ describe("FixedSubscriptionLicense", async function () {
             const tokenId = await fixedSubscription.getTokenCounter()
             await expect(fixedSubscription.mintToken(accounts[2].address))
                 .to.emit(fixedSubscription, "CreatedSubscriptionToken")
-                .withArgs(tokenId + 1, licensePrice)
+                .withArgs(tokenId, licensePrice)
         })
     })
 
@@ -118,7 +118,7 @@ describe("FixedSubscriptionLicense", async function () {
                     fixedSubscriptionLicenseContractSecondPayer,
                     "CreatedSubscriptionToken"
                 )
-                .withArgs(tokenId.toNumber() + 1, licensePrice)
+                .withArgs(tokenId.toNumber(), licensePrice)
 
             const blockNumBefore = await ethers.provider.getBlockNumber()
             const blockBefore = await ethers.provider.getBlock(blockNumBefore)
@@ -186,7 +186,7 @@ describe("FixedSubscriptionLicense", async function () {
                     fixedSubscriptionLicenseContractSecondPayer,
                     "CreatedSubscriptionToken"
                 )
-                .withArgs(tokenId.toNumber() + 1, licensePrice)
+                .withArgs(tokenId.toNumber(), licensePrice)
 
             const blockNumBefore = await ethers.provider.getBlockNumber()
             const blockBefore = await ethers.provider.getBlock(blockNumBefore)
@@ -254,7 +254,7 @@ describe("FixedSubscriptionLicense", async function () {
                     fixedSubscriptionLicenseContractSecondPayer,
                     "CreatedSubscriptionToken"
                 )
-                .withArgs(tokenId.toNumber() + 1, licensePrice)
+                .withArgs(tokenId.toNumber(), licensePrice)
 
             const blockNumBefore = await ethers.provider.getBlockNumber()
             const blockBefore = await ethers.provider.getBlock(blockNumBefore)
@@ -301,7 +301,7 @@ describe("FixedSubscriptionLicense", async function () {
                     fixedSubscriptionLicenseContractSecondPayer,
                     "CreatedSubscriptionToken"
                 )
-                .withArgs(tokenId.toNumber() + 1, licensePrice)
+                .withArgs(tokenId.toNumber(), licensePrice)
 
             const tokenURI =
                 await fixedSubscriptionLicenseContractSecondPayer.tokenURI(
@@ -337,7 +337,7 @@ describe("FixedSubscriptionLicense", async function () {
                     fixedSubscriptionLicenseContractSecondPayer,
                     "CreatedSubscriptionToken"
                 )
-                .withArgs(tokenId.toNumber() + 1, licensePrice)
+                .withArgs(tokenId.toNumber(), licensePrice)
 
             const blockNumBefore = await ethers.provider.getBlockNumber()
             const blockBefore = await ethers.provider.getBlock(blockNumBefore)
@@ -370,7 +370,7 @@ describe("FixedSubscriptionLicense", async function () {
                     fixedSubscriptionLicenseContractSecondPayer,
                     "CreatedSubscriptionToken"
                 )
-                .withArgs(tokenId.toNumber() + 1, licensePrice)
+                .withArgs(tokenId.toNumber(), licensePrice)
 
             const subscriptionActive =
                 await fixedSubscription.isSubscriptionActive(tokenId)
@@ -419,7 +419,7 @@ describe("FixedSubscriptionLicense", async function () {
                     fixedSubscriptionLicenseContractSecondPayer,
                     "CreatedSubscriptionToken"
                 )
-                .withArgs(tokenId.toNumber() + 1, licensePrice)
+                .withArgs(tokenId.toNumber(), licensePrice)
 
             await fixedSubscriptionDeployer.allowTransfer(tokenId)
             const tranferingAllowed = await fixedSubscription.isTransferAllowed(
@@ -492,7 +492,7 @@ describe("FixedSubscriptionLicense", async function () {
                     fixedSubscriptionLicenseContractSecondPayer,
                     "CreatedSubscriptionToken"
                 )
-                .withArgs(tokenId.toNumber() + 1, licensePrice)
+                .withArgs(tokenId.toNumber(), licensePrice)
 
             await fixedSubscriptionDeployer.allowTransfer(tokenId)
             const tranferingAllowed = await fixedSubscription.isTransferAllowed(
@@ -555,7 +555,7 @@ describe("FixedSubscriptionLicense", async function () {
                     fixedSubscriptionLicenseContractSecondPayer,
                     "CreatedSubscriptionToken"
                 )
-                .withArgs(tokenId.toNumber() + 1, licensePrice)
+                .withArgs(tokenId.toNumber(), licensePrice)
 
             const tranferingAllowed = await fixedSubscription.isTransferAllowed(
                 tokenId
@@ -585,7 +585,7 @@ describe("FixedSubscriptionLicense", async function () {
                     fixedSubscriptionLicenseContractSecondPayer,
                     "CreatedSubscriptionToken"
                 )
-                .withArgs(tokenId.toNumber() + 1, licensePrice)
+                .withArgs(tokenId.toNumber(), licensePrice)
 
             await fixedSubscriptionDeployer.allowTransfer(tokenId)
             const tranferingAllowed = await fixedSubscription.isTransferAllowed(
@@ -618,7 +618,7 @@ describe("FixedSubscriptionLicense", async function () {
                     fixedSubscriptionLicenseContractSecondPayer,
                     "CreatedSubscriptionToken"
                 )
-                .withArgs(tokenId.toNumber() + 1, licensePrice)
+                .withArgs(tokenId.toNumber(), licensePrice)
 
             await fixedSubscriptionDeployer.allowTransfer(tokenId)
             let tranferingAllowed = await fixedSubscription.isTransferAllowed(
@@ -656,7 +656,7 @@ describe("FixedSubscriptionLicense", async function () {
                     fixedSubscriptionLicenseContractSecondPayer,
                     "CreatedSubscriptionToken"
                 )
-                .withArgs(tokenId.toNumber() + 1, licensePrice)
+                .withArgs(tokenId.toNumber(), licensePrice)
 
             await fixedSubscriptionDeployer.allowTransfer(tokenId)
             let tranferingAllowed = await fixedSubscription.isTransferAllowed(
@@ -693,7 +693,7 @@ describe("FixedSubscriptionLicense", async function () {
                     fixedSubscriptionLicenseContractSecondPayer,
                     "CreatedSubscriptionToken"
                 )
-                .withArgs(tokenId.toNumber() + 1, licensePrice)
+                .withArgs(tokenId.toNumber(), licensePrice)
 
             await fixedSubscriptionDeployer.allowTransfer(tokenId)
             const tranferingAllowed = await fixedSubscription.isTransferAllowed(
@@ -724,7 +724,7 @@ describe("FixedSubscriptionLicense", async function () {
                     fixedSubscriptionLicenseContractSecondPayer,
                     "CreatedSubscriptionToken"
                 )
-                .withArgs(tokenId.toNumber() + 1, licensePrice)
+                .withArgs(tokenId.toNumber(), licensePrice)
 
             await fixedSubscriptionDeployer.allowTransfer(tokenId)
             await expect(
@@ -810,7 +810,7 @@ describe("FixedSubscriptionLicense", async function () {
                     perpetualLicenseContractSecondPayer,
                     "CreatedSubscriptionToken"
                 )
-                .withArgs(tokenId.toNumber() + 1, licensePrice)
+                .withArgs(tokenId.toNumber(), licensePrice)
             const { deployer, secondPayer } = await getNamedAccounts()
             const ownerBalanceBefore = await ethers.provider.getBalance(
                 deployer
@@ -877,7 +877,7 @@ describe("FixedSubscriptionLicense", async function () {
                     fixedSubscriptionLicenseContractSecondPayer,
                     "CreatedSubscriptionToken"
                 )
-                .withArgs(tokenId.toNumber() + 1, licensePrice)
+                .withArgs(tokenId.toNumber(), licensePrice)
 
             const blockNumBefore = await ethers.provider.getBlockNumber()
             const blockBefore = await ethers.provider.getBlock(blockNumBefore)
@@ -938,7 +938,7 @@ describe("FixedSubscriptionLicense", async function () {
                     fixedSubscriptionLicenseContractSecondPayer,
                     "CreatedSubscriptionToken"
                 )
-                .withArgs(tokenId.toNumber() + 1, licensePrice)
+                .withArgs(tokenId.toNumber(), licensePrice)
 
             const blockNumBefore = await ethers.provider.getBlockNumber()
             const blockBefore = await ethers.provider.getBlock(blockNumBefore)
@@ -1001,7 +1001,7 @@ describe("FixedSubscriptionLicense", async function () {
                     fixedSubscriptionLicenseContractSecondPayer,
                     "CreatedSubscriptionToken"
                 )
-                .withArgs(tokenId.toNumber() + 1, licensePrice)
+                .withArgs(tokenId.toNumber(), licensePrice)
 
             const blockNumBefore = await ethers.provider.getBlockNumber()
             const blockBefore = await ethers.provider.getBlock(blockNumBefore)
@@ -1054,7 +1054,7 @@ describe("FixedSubscriptionLicense", async function () {
                     fixedSubscriptionLicenseContractSecondPayer,
                     "CreatedSubscriptionToken"
                 )
-                .withArgs(tokenId.toNumber() + 1, licensePrice)
+                .withArgs(tokenId.toNumber(), licensePrice)
 
             const blockNumBefore = await ethers.provider.getBlockNumber()
             const blockBefore = await ethers.provider.getBlock(blockNumBefore)

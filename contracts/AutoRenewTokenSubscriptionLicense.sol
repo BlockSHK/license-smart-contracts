@@ -4,20 +4,23 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "base64-sol/base64.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 error ERC721Metadata__URI_QueryFor_NonExistentToken();
 error SubscriptionLicense__TransferFailed();
 error SubscriptionLicense__NeedMoreETHSent();
 
-contract FixedSubscriptionLicense is ERC721,Ownable{
-    using SafeMath for uint256;
+contract AutoRenewSubscriptionLicense is ERC721,Ownable{
+    using SafeERC20 for IERC20;
 
     uint256 private s_tokenCounter;
     uint256 private s_licensePrice;
+    uint256 private s_gasPrice;
     string private i_companyName;
     string private i_licenseType;
     string private i_licenseName;
+    address private i_tokenAddress;
     uint256 private i_periodSecond;
     string private i_licenseAgreementUrl;
 
@@ -25,15 +28,17 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
     mapping(uint256 => uint256) public expirationTimestamp;
     mapping(uint256 => uint256) public transferingAllowed;
 
-    event CreatedSubscriptionToken(uint256 indexed tokenId, uint256 licensePrice);
     event UpdatedSubscriptionToken(uint256 indexed tokenId, uint256 licensePrice);
+    event NewSubscriptionToken(uint256 indexed tokenId, uint256 licensePrice);
 
     constructor(
         string memory companyName,
         string memory licenseName,
         string memory licenseAgreementUrl,
+        address tokenAddress,
         uint256  licensePrice,
-        uint256 subscriptionPeriodSecond
+        uint256 subscriptionPeriodSecond,
+        uint256 gasPrice
     ) ERC721("Software License", "SHK") {
         s_tokenCounter = 0;
         s_licensePrice = licensePrice;
@@ -42,21 +47,37 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
         i_licenseType = "Subscription";
         i_periodSecond = subscriptionPeriodSecond; 
         i_licenseAgreementUrl = licenseAgreementUrl;
+        s_gasPrice = gasPrice;
+        i_tokenAddress = tokenAddress;
     }
 
 
-    function buyToken() public payable  {
-        if (msg.value < s_licensePrice) {
-            revert SubscriptionLicense__NeedMoreETHSent();
-        }
+    function buyToken() public {
+
+        uint256 allowance = IERC20(i_tokenAddress).allowance(msg.sender, address(this));
+        uint256 balance = IERC20(i_tokenAddress).balanceOf(msg.sender);
+
+        require( allowance >= s_licensePrice +s_gasPrice && balance >= s_licensePrice + s_gasPrice, "Subscription is not ready or not enough balance or allowance");
+
 
         transferingAllowed[s_tokenCounter] = 1;
         _safeMint(msg.sender, s_tokenCounter);
         startTimestamp[s_tokenCounter] = block.timestamp;
-        expirationTimestamp[s_tokenCounter] = block.timestamp.add(i_periodSecond);
+        expirationTimestamp[s_tokenCounter] = block.timestamp + i_periodSecond;
         transferingAllowed[s_tokenCounter] = 0;
+
+        uint256 startingBalance = IERC20(i_tokenAddress).balanceOf(address(this));
+        IERC20(i_tokenAddress).safeTransferFrom(msg.sender,address(this),s_licensePrice);
+        require(
+          (startingBalance+s_licensePrice) == IERC20(i_tokenAddress).balanceOf(address(this)),
+          "ERC20 Balance did not change correctly"
+        );
+
+
         s_tokenCounter = s_tokenCounter + 1;
-        emit CreatedSubscriptionToken(s_tokenCounter-1, s_licensePrice);
+
+        emit NewSubscriptionToken(s_tokenCounter - 1, s_licensePrice);
+
     }
 
     function mintToken(address customer) public onlyOwner {
@@ -64,20 +85,60 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
         transferingAllowed[s_tokenCounter] = 1;
         _safeMint(customer, s_tokenCounter);
         startTimestamp[s_tokenCounter] = block.timestamp;
-        expirationTimestamp[s_tokenCounter] = block.timestamp.add(i_periodSecond);
+        expirationTimestamp[s_tokenCounter] = block.timestamp +i_periodSecond;
         transferingAllowed[s_tokenCounter] = 0;
+
         s_tokenCounter = s_tokenCounter + 1;
-        emit CreatedSubscriptionToken(s_tokenCounter-1, s_licensePrice);
+        emit NewSubscriptionToken(s_tokenCounter - 1, s_licensePrice);
+
     }
 
-    function updateSubscription(uint256 tokenId) public payable {
-        if (msg.value < s_licensePrice) {
-            revert SubscriptionLicense__NeedMoreETHSent();
+    function updateSubscription(uint256 tokenId) public{
+        require( block.timestamp != uint256(0), "Subscription is canceled");
+        require( block.timestamp >= expirationTimestamp[tokenId], "Subscription is still active");
+
+        uint256 allowance = IERC20(i_tokenAddress).allowance(ownerOf(tokenId), address(this));
+        uint256 balance = IERC20(i_tokenAddress).balanceOf(ownerOf(tokenId));
+
+        require( allowance >= s_licensePrice + s_gasPrice && balance >= s_licensePrice + s_gasPrice, "Subscription is not ready or not enough balance or allowance");
+        expirationTimestamp[tokenId] = block.timestamp + i_periodSecond;
+
+        uint256 startingBalance = IERC20(i_tokenAddress).balanceOf(address(this));
+        IERC20(i_tokenAddress).safeTransferFrom(ownerOf(tokenId),address(this),s_licensePrice);
+        require(
+          (startingBalance+s_licensePrice) == IERC20(i_tokenAddress).balanceOf(address(this)),
+          "ERC20 Balance did not change correctly"
+        );
+
+
+        if (s_gasPrice > 0) {
+            IERC20(i_tokenAddress).safeTransferFrom(ownerOf(tokenId), msg.sender, s_gasPrice);
+
         }
-        if (block.timestamp <= expirationTimestamp[tokenId]){
-            expirationTimestamp[tokenId] = expirationTimestamp[tokenId].add(i_periodSecond);  
-        }else{
-            expirationTimestamp[tokenId] = block.timestamp.add(i_periodSecond);
+        emit UpdatedSubscriptionToken(tokenId, s_licensePrice);
+    }
+
+    function reactivateSubscription(uint256 tokenId) public{
+        require(msg.sender == ownerOf(tokenId), "Only owner can cancel the subscription");
+        require( block.timestamp >= expirationTimestamp[tokenId], "Subscription is still active");
+
+        uint256 allowance = IERC20(i_tokenAddress).allowance(ownerOf(tokenId), address(this));
+        uint256 balance = IERC20(i_tokenAddress).balanceOf(ownerOf(tokenId));
+
+        require( allowance >= s_licensePrice + s_gasPrice && balance >= s_licensePrice + s_gasPrice, "Subscription is not ready or not enough balance or allowance");
+        expirationTimestamp[tokenId] = block.timestamp + i_periodSecond;
+
+        uint256 startingBalance = IERC20(i_tokenAddress).balanceOf(address(this));
+        IERC20(i_tokenAddress).safeTransferFrom(ownerOf(tokenId),address(this),s_licensePrice);
+        require(
+          (startingBalance+s_licensePrice) == IERC20(i_tokenAddress).balanceOf(address(this)),
+          "ERC20 Balance did not change correctly"
+        );
+
+
+        if (s_gasPrice > 0) {
+            IERC20(i_tokenAddress).safeTransferFrom(ownerOf(tokenId), msg.sender, s_gasPrice);
+
         }
         emit UpdatedSubscriptionToken(tokenId, s_licensePrice);
     }
@@ -107,6 +168,8 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
                                 i_licenseAgreementUrl,
                                 '","license Type":"',
                                 i_licenseType,
+                                '","payment token Address":"',
+                                i_tokenAddress,
                                 '","price":"',
                                 Strings.toString(s_licensePrice),
                                 '","start timestamp":"',
@@ -131,7 +194,9 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
     function getLicensePrice() public view returns (uint256) {
         return s_licensePrice ;
     }
-
+    function getGasPrice() public view returns (uint256) {
+        return s_gasPrice ;
+    }
     function getSubscritptionTimePeriod() public view returns (uint256) {
         return i_periodSecond ;
     }
@@ -148,12 +213,19 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
         return (transferingAllowed[tokenId]==1);
     }
     function withdraw() public onlyOwner {
-        uint256 amount = address(this).balance;
-        (bool success, ) = payable(msg.sender).call{value: amount}("");
-        if (!success) {
-            revert SubscriptionLicense__TransferFailed();
-        }
+
+        uint256 balance = IERC20(i_tokenAddress).balanceOf(address(this));
+
+        uint256 startingBalance = IERC20(i_tokenAddress).balanceOf(owner());
+
+        IERC20(i_tokenAddress).safeTransfer(owner(), balance);
+        require(
+          (startingBalance+balance) == IERC20(i_tokenAddress).balanceOf(owner()),
+          "ERC20 Balance did not change correctly"
+        );
+
     }
+
     function _beforeTokenTransfer(address from, address to, uint256 firsTokenId, uint256 batchSize) internal virtual override {
         require(transferingAllowed[firsTokenId] == 1 , "Prior Approval needed for transfer of the tokens");
         super._beforeTokenTransfer(from, to, firsTokenId,batchSize);
@@ -202,17 +274,13 @@ contract FixedSubscriptionLicense is ERC721,Ownable{
         transferingAllowed[tokenId] = 0;
     }
 
-    function cancelSubscription(uint256 tokenId) public onlyOwner {
-        expirationTimestamp[tokenId] = block.timestamp;
-    }
-    
-    function getRefundEligible(uint256 tokenId, uint256 timestamp)  public view returns (bool) {
-        if(timestamp >= expirationTimestamp[tokenId]){
-          return false;
-        }
-        return true;
-    }
 
     
+    function cancelSubscription(uint256 tokenId) public  {
+        require(msg.sender == ownerOf(tokenId), "Only owner can cancel the subscription");
+        require(block.timestamp != uint256(0), "Subscription is already canceled");
+
+        expirationTimestamp[tokenId] = uint256(0);
+    }
 
 }
