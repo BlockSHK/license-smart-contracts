@@ -155,4 +155,225 @@ describe("AutoRenewSubscriptionLicense", async function () {
                 .withArgs(tokenId, subscriptionPrice)
         })
     })
+
+    describe("updateSubscription", async function () {
+        it("should return the current expiration time + period as expiration time for the given token after subscription updated before subscription ended", async () => {
+            const oneMinute = 60
+            const subscriptionPeriodSecond = 60 * 60 * 24 * 30
+            await ethers.provider.send("evm_increaseTime", [oneMinute])
+            await ethers.provider.send("evm_mine")
+
+            // Create a subscription token
+            const customerAddress = accounts[1].address
+            const subscriptionPrice =
+                await autoRenewSubscriptionLicense.getLicensePrice()
+            const tokenId = await autoRenewSubscriptionLicense.getTokenCounter()
+
+            const fromBalance = await mapCoin.balanceOf(customerAddress)
+            if (fromBalance.toNumber() <= 0) {
+                const transferAmount = "10000000"
+                const transactionResponse = await mapCoin.transfer(
+                    customerAddress,
+                    transferAmount
+                )
+                await transactionResponse.wait()
+            }
+
+            const approveAmount = "1000"
+            const mapCoinFrom = await ethers.getContract("MapCoin", accounts[1])
+            const transactionResponseApprove = await mapCoinFrom.approve(
+                autoRenewSubscriptionLicense.address,
+                approveAmount
+            )
+            await transactionResponseApprove.wait()
+
+            await autoRenewSubscriptionLicense.connect(accounts[1]).buyToken()
+
+            const blockNumBefore = await ethers.provider.getBlockNumber()
+            const blockBefore = await ethers.provider.getBlock(blockNumBefore)
+            const timestampBefore = blockBefore.timestamp
+
+            const expirationTime =
+                await autoRenewSubscriptionLicense.getExpirationTime(tokenId)
+            expect(expirationTime).to.equal(timestampBefore + 60 * 60 * 24 * 30)
+
+            await ethers.provider.send("evm_increaseTime", [
+                subscriptionPeriodSecond,
+            ])
+            await ethers.provider.send("evm_mine")
+
+            await autoRenewSubscriptionLicense
+                .connect(accounts[0])
+                .updateSubscription(tokenId)
+
+            const blockNumAfter = await ethers.provider.getBlockNumber()
+            const blockAfter = await ethers.provider.getBlock(blockNumAfter)
+            const timestampAfter = blockAfter.timestamp
+
+            const expirationTimeAfterUpdate =
+                await autoRenewSubscriptionLicense.getExpirationTime(tokenId)
+            expect(expirationTimeAfterUpdate).to.equal(
+                timestampAfter + 60 * 60 * 24 * 30
+            )
+        })
+
+        it("should revert with subscription canceled if tried to update after canceled subscription", async () => {
+            const oneMinute = 60
+            const subscriptionPeriodSecond = 60 * 60 * 24 * 30
+            await ethers.provider.send("evm_increaseTime", [oneMinute])
+            await ethers.provider.send("evm_mine")
+
+            // Create a subscription token
+            const customerAddress = accounts[1].address
+            const subscriptionPrice =
+                await autoRenewSubscriptionLicense.getLicensePrice()
+            const tokenId = await autoRenewSubscriptionLicense.getTokenCounter()
+
+            const fromBalance = await mapCoin.balanceOf(customerAddress)
+            if (fromBalance.toNumber() <= 0) {
+                const transferAmount = "10000000"
+                const transactionResponse = await mapCoin.transfer(
+                    customerAddress,
+                    transferAmount
+                )
+                await transactionResponse.wait()
+            }
+
+            const approveAmount = "1000"
+            const mapCoinFrom = await ethers.getContract("MapCoin", accounts[1])
+            const transactionResponseApprove = await mapCoinFrom.approve(
+                autoRenewSubscriptionLicense.address,
+                approveAmount
+            )
+            await transactionResponseApprove.wait()
+
+            await autoRenewSubscriptionLicense.connect(accounts[1]).buyToken()
+
+            const blockNumBefore = await ethers.provider.getBlockNumber()
+            const blockBefore = await ethers.provider.getBlock(blockNumBefore)
+            const timestampBefore = blockBefore.timestamp
+
+            const expirationTime =
+                await autoRenewSubscriptionLicense.getExpirationTime(tokenId)
+            expect(expirationTime).to.equal(timestampBefore + 60 * 60 * 24 * 30)
+
+            await ethers.provider.send("evm_increaseTime", [
+                subscriptionPeriodSecond,
+            ])
+            await ethers.provider.send("evm_mine")
+            await autoRenewSubscriptionLicense
+                .connect(accounts[1])
+                .cancelSubscription(tokenId)
+
+            await expect(
+                autoRenewSubscriptionLicense
+                    .connect(accounts[0])
+                    .updateSubscription(tokenId)
+            ).to.be.revertedWith("Subscription is canceled")
+        })
+
+        it("should revert with Subscription is still active if tried to update when subscription is still active", async () => {
+            const oneMinute = 60
+            const subscriptionPeriodSecond = 60 * 60 * 24 * 30
+            await ethers.provider.send("evm_increaseTime", [oneMinute])
+            await ethers.provider.send("evm_mine")
+
+            // Create a subscription token
+            const customerAddress = accounts[1].address
+            const subscriptionPrice =
+                await autoRenewSubscriptionLicense.getLicensePrice()
+            const tokenId = await autoRenewSubscriptionLicense.getTokenCounter()
+
+            const fromBalance = await mapCoin.balanceOf(customerAddress)
+            if (fromBalance.toNumber() <= 0) {
+                const transferAmount = "10000000"
+                const transactionResponse = await mapCoin.transfer(
+                    customerAddress,
+                    transferAmount
+                )
+                await transactionResponse.wait()
+            }
+
+            const approveAmount = "1000"
+            const mapCoinFrom = await ethers.getContract("MapCoin", accounts[1])
+            const transactionResponseApprove = await mapCoinFrom.approve(
+                autoRenewSubscriptionLicense.address,
+                approveAmount
+            )
+            await transactionResponseApprove.wait()
+
+            await autoRenewSubscriptionLicense.connect(accounts[1]).buyToken()
+
+            const blockNumBefore = await ethers.provider.getBlockNumber()
+            const blockBefore = await ethers.provider.getBlock(blockNumBefore)
+            const timestampBefore = blockBefore.timestamp
+
+            const expirationTime =
+                await autoRenewSubscriptionLicense.getExpirationTime(tokenId)
+            expect(expirationTime).to.equal(timestampBefore + 60 * 60 * 24 * 30)
+
+            await ethers.provider.send("evm_increaseTime", [oneMinute])
+            await ethers.provider.send("evm_mine")
+
+            await expect(
+                autoRenewSubscriptionLicense
+                    .connect(accounts[0])
+                    .updateSubscription(tokenId)
+            ).to.be.revertedWith("Subscription is still active")
+        })
+
+        it("should revert with Subscription is not ready or not enough balance or allowance if balance is not enough", async () => {
+            const oneMinute = 60
+            const subscriptionPeriodSecond = 60 * 60 * 24 * 30
+            await ethers.provider.send("evm_increaseTime", [oneMinute])
+            await ethers.provider.send("evm_mine")
+
+            // Create a subscription token
+            const customerAddress = accounts[1].address
+            const subscriptionPrice =
+                await autoRenewSubscriptionLicense.getLicensePrice()
+            const tokenId = await autoRenewSubscriptionLicense.getTokenCounter()
+
+            const fromBalance = await mapCoin.balanceOf(customerAddress)
+            if (fromBalance.toNumber() <= 0) {
+                const transferAmount = "10"
+                const transactionResponse = await mapCoin.transfer(
+                    customerAddress,
+                    transferAmount
+                )
+                await transactionResponse.wait()
+            }
+
+            const approveAmount = "1000"
+            const mapCoinFrom = await ethers.getContract("MapCoin", accounts[1])
+            const transactionResponseApprove = await mapCoinFrom.approve(
+                autoRenewSubscriptionLicense.address,
+                approveAmount
+            )
+            await transactionResponseApprove.wait()
+
+            await autoRenewSubscriptionLicense.connect(accounts[1]).buyToken()
+
+            const blockNumBefore = await ethers.provider.getBlockNumber()
+            const blockBefore = await ethers.provider.getBlock(blockNumBefore)
+            const timestampBefore = blockBefore.timestamp
+
+            const expirationTime =
+                await autoRenewSubscriptionLicense.getExpirationTime(tokenId)
+            expect(expirationTime).to.equal(timestampBefore + 60 * 60 * 24 * 30)
+
+            await ethers.provider.send("evm_increaseTime", [
+                subscriptionPeriodSecond,
+            ])
+            await ethers.provider.send("evm_mine")
+
+            await expect(
+                autoRenewSubscriptionLicense
+                    .connect(accounts[0])
+                    .updateSubscription(tokenId)
+            ).to.be.revertedWith(
+                "Subscription is not ready or not enough balance or allowance"
+            )
+        })
+    })
 })
