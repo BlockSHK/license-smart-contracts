@@ -132,4 +132,27 @@ describe("AutoRenewSubscriptionLicense", async function () {
                 .withArgs(tokenId, subscriptionPrice)
         })
     })
+
+    describe("mintToken", async function () {
+        it("should revert if called by a non-owner", async () => {
+            await expect(
+                autoRenewSubscriptionLicense
+                    .connect(accounts[1])
+                    .mintToken(accounts[1].address)
+            ).to.be.revertedWith("Ownable: caller is not the owner")
+        })
+
+        it("should mint tokens to the specified address if called by the owner", async () => {
+            const owner = accounts[0]
+            const recipient = accounts[1].address
+            const tokenId = await autoRenewSubscriptionLicense.getTokenCounter()
+            const subscriptionPrice =
+                await autoRenewSubscriptionLicense.getLicensePrice()
+            await expect(
+                autoRenewSubscriptionLicense.connect(owner).mintToken(recipient)
+            )
+                .to.emit(autoRenewSubscriptionLicense, "NewSubscriptionToken")
+                .withArgs(tokenId, subscriptionPrice)
+        })
+    })
 })
