@@ -834,4 +834,362 @@ describe("AutoRenewSubscriptionLicense", async function () {
             expect(contractBalanceAfter).to.equal(contractBalanceBefore)
         })
     })
+
+    // copied code
+
+    describe("Transfer License from TransferFrom", async function () {
+        it("Transfer the license token", async () => {
+            const customerAddress = accounts[1].address
+            const subscriptionPrice =
+                await autoRenewSubscriptionLicense.getLicensePrice()
+            const tokenId = await autoRenewSubscriptionLicense.getTokenCounter()
+
+            const fromBalance = await mapCoin.balanceOf(customerAddress)
+            if (fromBalance.toNumber() <= 0) {
+                const transferAmount = "10"
+                const transactionResponse = await mapCoin.transfer(
+                    customerAddress,
+                    transferAmount
+                )
+                await transactionResponse.wait()
+            }
+
+            const approveAmount = "1000"
+            const mapCoinFrom = await ethers.getContract("MapCoin", accounts[1])
+            const transactionResponseApprove = await mapCoinFrom.approve(
+                autoRenewSubscriptionLicense.address,
+                approveAmount
+            )
+            await transactionResponseApprove.wait()
+
+            await autoRenewSubscriptionLicense.connect(accounts[1]).buyToken()
+
+            await autoRenewSubscriptionLicense.allowTransfer(tokenId)
+            const tranferingAllowed =
+                await autoRenewSubscriptionLicense.isTransferAllowed(tokenId)
+            expect(tranferingAllowed).to.be.true
+
+            // Transfer the token
+            await autoRenewSubscriptionLicense
+                .connect(accounts[1])
+                .transferFrom(accounts[1].address, accounts[2].address, tokenId)
+
+            // Expect that the transfer has happened correctly
+            expect(
+                await autoRenewSubscriptionLicense
+                    .connect(accounts[1])
+                    .balanceOf(accounts[1].address)
+            ).to.equal(0)
+            expect(
+                await autoRenewSubscriptionLicense
+                    .connect(accounts[1])
+                    .balanceOf(accounts[2].address)
+            ).to.equal(1)
+            expect(
+                await autoRenewSubscriptionLicense
+                    .connect(accounts[1])
+                    .ownerOf(tokenId)
+            ).to.equal(accounts[2].address)
+        })
+
+        it("Fails to transfer a non-existent token", async () => {
+            const accounts = await ethers.getSigners()
+            const invalidTokenId = 999 // An invalid token ID
+
+            // Expect that transferring a non-existent token fails with an error
+            await expect(
+                autoRenewSubscriptionLicense
+                    .connect(accounts[1])
+                    .transferFrom(
+                        accounts[1].address,
+                        accounts[2].address,
+                        invalidTokenId
+                    )
+            ).to.be.revertedWith("ERC721: invalid token ID")
+        })
+    })
+
+    describe("Transfer License from SafeTransferFrom", async function () {
+        it("Transfer the license token", async () => {
+            const customerAddress = accounts[1].address
+            const subscriptionPrice =
+                await autoRenewSubscriptionLicense.getLicensePrice()
+            const tokenId = await autoRenewSubscriptionLicense.getTokenCounter()
+
+            const fromBalance = await mapCoin.balanceOf(customerAddress)
+            if (fromBalance.toNumber() <= 0) {
+                const transferAmount = "10"
+                const transactionResponse = await mapCoin.transfer(
+                    customerAddress,
+                    transferAmount
+                )
+                await transactionResponse.wait()
+            }
+
+            const approveAmount = "1000"
+            const mapCoinFrom = await ethers.getContract("MapCoin", accounts[1])
+            const transactionResponseApprove = await mapCoinFrom.approve(
+                autoRenewSubscriptionLicense.address,
+                approveAmount
+            )
+            await transactionResponseApprove.wait()
+
+            await autoRenewSubscriptionLicense.connect(accounts[1]).buyToken()
+
+            await autoRenewSubscriptionLicense.allowTransfer(tokenId)
+            const tranferingAllowed =
+                await autoRenewSubscriptionLicense.isTransferAllowed(tokenId)
+            expect(tranferingAllowed).to.be.true
+
+            // Transfer the token
+            await autoRenewSubscriptionLicense
+                .connect(accounts[1])
+                ["safeTransferFrom(address,address,uint256)"](
+                    accounts[1].address,
+                    accounts[2].address,
+                    tokenId
+                )
+
+            // Expect that the transfer has happened correctly
+            expect(
+                await autoRenewSubscriptionLicense
+                    .connect(accounts[1])
+                    .balanceOf(accounts[1].address)
+            ).to.equal(0)
+            expect(
+                await autoRenewSubscriptionLicense
+                    .connect(accounts[1])
+                    .balanceOf(accounts[2].address)
+            ).to.equal(1)
+            expect(
+                await autoRenewSubscriptionLicense
+                    .connect(accounts[1])
+                    .ownerOf(tokenId)
+            ).to.equal(accounts[2].address)
+        })
+
+        it("Fails to transfer a non-existent token", async () => {
+            const accounts = await ethers.getSigners()
+            const invalidTokenId = 999 // An invalid token ID
+
+            // Expect that transferring a non-existent token fails with an error
+            await expect(
+                autoRenewSubscriptionLicense
+                    .connect(accounts[1])
+                    ["safeTransferFrom(address,address,uint256)"](
+                        accounts[1].address,
+                        accounts[2].address,
+                        invalidTokenId
+                    )
+            ).to.be.revertedWith("ERC721: invalid token ID")
+        })
+    })
+    describe("isTransferAllowed", async function () {
+        it("should return false since owner didn't allow transfering", async () => {
+            const customerAddress = accounts[1].address
+            const subscriptionPrice =
+                await autoRenewSubscriptionLicense.getLicensePrice()
+            const tokenId = await autoRenewSubscriptionLicense.getTokenCounter()
+
+            const fromBalance = await mapCoin.balanceOf(customerAddress)
+            if (fromBalance.toNumber() <= 0) {
+                const transferAmount = "10"
+                const transactionResponse = await mapCoin.transfer(
+                    customerAddress,
+                    transferAmount
+                )
+                await transactionResponse.wait()
+            }
+
+            const approveAmount = "1000"
+            const mapCoinFrom = await ethers.getContract("MapCoin", accounts[1])
+            const transactionResponseApprove = await mapCoinFrom.approve(
+                autoRenewSubscriptionLicense.address,
+                approveAmount
+            )
+            await transactionResponseApprove.wait()
+
+            await autoRenewSubscriptionLicense.connect(accounts[1]).buyToken()
+            const tranferingAllowed =
+                await autoRenewSubscriptionLicense.isTransferAllowed(tokenId)
+            expect(tranferingAllowed).to.be.false
+        })
+
+        it("should return true when owner allow transfering", async () => {
+            const customerAddress = accounts[1].address
+            const subscriptionPrice =
+                await autoRenewSubscriptionLicense.getLicensePrice()
+            const tokenId = await autoRenewSubscriptionLicense.getTokenCounter()
+
+            const fromBalance = await mapCoin.balanceOf(customerAddress)
+            if (fromBalance.toNumber() <= 0) {
+                const transferAmount = "10"
+                const transactionResponse = await mapCoin.transfer(
+                    customerAddress,
+                    transferAmount
+                )
+                await transactionResponse.wait()
+            }
+
+            const approveAmount = "1000"
+            const mapCoinFrom = await ethers.getContract("MapCoin", accounts[1])
+            const transactionResponseApprove = await mapCoinFrom.approve(
+                autoRenewSubscriptionLicense.address,
+                approveAmount
+            )
+            await transactionResponseApprove.wait()
+
+            await autoRenewSubscriptionLicense.connect(accounts[1]).buyToken()
+
+            await autoRenewSubscriptionLicense.allowTransfer(tokenId)
+            const tranferingAllowed =
+                await autoRenewSubscriptionLicense.isTransferAllowed(tokenId)
+            expect(tranferingAllowed).to.be.true
+        })
+    })
+
+    describe("restrictTransfer", async function () {
+        it("should return false when owner allow and then restricted transfering", async () => {
+            const customerAddress = accounts[1].address
+            const subscriptionPrice =
+                await autoRenewSubscriptionLicense.getLicensePrice()
+            const tokenId = await autoRenewSubscriptionLicense.getTokenCounter()
+
+            const fromBalance = await mapCoin.balanceOf(customerAddress)
+            if (fromBalance.toNumber() <= 0) {
+                const transferAmount = "10"
+                const transactionResponse = await mapCoin.transfer(
+                    customerAddress,
+                    transferAmount
+                )
+                await transactionResponse.wait()
+            }
+
+            const approveAmount = "1000"
+            const mapCoinFrom = await ethers.getContract("MapCoin", accounts[1])
+            const transactionResponseApprove = await mapCoinFrom.approve(
+                autoRenewSubscriptionLicense.address,
+                approveAmount
+            )
+            await transactionResponseApprove.wait()
+
+            await autoRenewSubscriptionLicense.connect(accounts[1]).buyToken()
+
+            await autoRenewSubscriptionLicense.allowTransfer(tokenId)
+            let tranferingAllowed =
+                await autoRenewSubscriptionLicense.isTransferAllowed(tokenId)
+            expect(tranferingAllowed).to.be.true
+
+            await autoRenewSubscriptionLicense.restrictTransfer(tokenId)
+
+            tranferingAllowed =
+                await autoRenewSubscriptionLicense.isTransferAllowed(tokenId)
+            expect(tranferingAllowed).to.be.false
+        })
+
+        it("reverts if a non-owner tries to update the permission for transfer license", async () => {
+            const customerAddress = accounts[1].address
+            const subscriptionPrice =
+                await autoRenewSubscriptionLicense.getLicensePrice()
+            const tokenId = await autoRenewSubscriptionLicense.getTokenCounter()
+
+            const fromBalance = await mapCoin.balanceOf(customerAddress)
+            if (fromBalance.toNumber() <= 0) {
+                const transferAmount = "10"
+                const transactionResponse = await mapCoin.transfer(
+                    customerAddress,
+                    transferAmount
+                )
+                await transactionResponse.wait()
+            }
+
+            const approveAmount = "1000"
+            const mapCoinFrom = await ethers.getContract("MapCoin", accounts[1])
+            const transactionResponseApprove = await mapCoinFrom.approve(
+                autoRenewSubscriptionLicense.address,
+                approveAmount
+            )
+            await transactionResponseApprove.wait()
+
+            await autoRenewSubscriptionLicense.connect(accounts[1]).buyToken()
+
+            await autoRenewSubscriptionLicense.allowTransfer(tokenId)
+            const tranferingAllowed =
+                await autoRenewSubscriptionLicense.isTransferAllowed(tokenId)
+            expect(tranferingAllowed).to.be.true
+
+            await expect(
+                autoRenewSubscriptionLicense
+                    .connect(accounts[1])
+                    .restrictTransfer(tokenId)
+            ).to.be.rejectedWith("Ownable: caller is not the owner")
+        })
+    })
+
+    describe("allowTransfer", async function () {
+        it("allows the owner to update the permission for transfer license", async () => {
+            const customerAddress = accounts[1].address
+            const subscriptionPrice =
+                await autoRenewSubscriptionLicense.getLicensePrice()
+            const tokenId = await autoRenewSubscriptionLicense.getTokenCounter()
+
+            const fromBalance = await mapCoin.balanceOf(customerAddress)
+            if (fromBalance.toNumber() <= 0) {
+                const transferAmount = "10"
+                const transactionResponse = await mapCoin.transfer(
+                    customerAddress,
+                    transferAmount
+                )
+                await transactionResponse.wait()
+            }
+
+            const approveAmount = "1000"
+            const mapCoinFrom = await ethers.getContract("MapCoin", accounts[1])
+            const transactionResponseApprove = await mapCoinFrom.approve(
+                autoRenewSubscriptionLicense.address,
+                approveAmount
+            )
+            await transactionResponseApprove.wait()
+
+            await autoRenewSubscriptionLicense.connect(accounts[1]).buyToken()
+
+            await autoRenewSubscriptionLicense.allowTransfer(tokenId)
+            const tranferingAllowed =
+                await autoRenewSubscriptionLicense.isTransferAllowed(tokenId)
+            expect(tranferingAllowed).to.be.true
+        })
+
+        it("reverts if a non-owner tries to update the permission for transfer license", async () => {
+            const customerAddress = accounts[1].address
+            const subscriptionPrice =
+                await autoRenewSubscriptionLicense.getLicensePrice()
+            const tokenId = await autoRenewSubscriptionLicense.getTokenCounter()
+
+            const fromBalance = await mapCoin.balanceOf(customerAddress)
+            if (fromBalance.toNumber() <= 0) {
+                const transferAmount = "10"
+                const transactionResponse = await mapCoin.transfer(
+                    customerAddress,
+                    transferAmount
+                )
+                await transactionResponse.wait()
+            }
+
+            const approveAmount = "1000"
+            const mapCoinFrom = await ethers.getContract("MapCoin", accounts[1])
+            const transactionResponseApprove = await mapCoinFrom.approve(
+                autoRenewSubscriptionLicense.address,
+                approveAmount
+            )
+            await transactionResponseApprove.wait()
+
+            await autoRenewSubscriptionLicense.connect(accounts[1]).buyToken()
+
+            await expect(
+                autoRenewSubscriptionLicense
+                    .connect(accounts[1])
+                    .allowTransfer(tokenId)
+            ).to.be.rejectedWith("Ownable: caller is not the owner")
+        })
+    })
 })
