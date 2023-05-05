@@ -57,7 +57,7 @@ contract AutoRenewSubscriptionLicense is ERC721,Ownable{
         uint256 allowance = IERC20(i_tokenAddress).allowance(msg.sender, address(this));
         uint256 balance = IERC20(i_tokenAddress).balanceOf(msg.sender);
 
-        require( allowance >= s_licensePrice +s_gasPrice && balance >= s_licensePrice + s_gasPrice, "Subscription is not ready or not enough balance or allowance");
+        require( allowance >= s_licensePrice  && balance >= s_licensePrice , "Subscription is not ready or not enough balance or allowance");
 
 
         transferingAllowed[s_tokenCounter] = 1;
@@ -94,7 +94,7 @@ contract AutoRenewSubscriptionLicense is ERC721,Ownable{
     }
 
     function updateSubscription(uint256 tokenId) public{
-        require( block.timestamp != uint256(0), "Subscription is canceled");
+        require( expirationTimestamp[tokenId] != uint256(0), "Subscription is canceled");
         require( block.timestamp >= expirationTimestamp[tokenId], "Subscription is still active");
 
         uint256 allowance = IERC20(i_tokenAddress).allowance(ownerOf(tokenId), address(this));
@@ -119,13 +119,13 @@ contract AutoRenewSubscriptionLicense is ERC721,Ownable{
     }
 
     function reactivateSubscription(uint256 tokenId) public{
-        require(msg.sender == ownerOf(tokenId), "Only owner can cancel the subscription");
+        require(msg.sender == ownerOf(tokenId), "Only owner of token can reactivate the subscription");
         require( block.timestamp >= expirationTimestamp[tokenId], "Subscription is still active");
 
         uint256 allowance = IERC20(i_tokenAddress).allowance(ownerOf(tokenId), address(this));
         uint256 balance = IERC20(i_tokenAddress).balanceOf(ownerOf(tokenId));
 
-        require( allowance >= s_licensePrice + s_gasPrice && balance >= s_licensePrice + s_gasPrice, "Subscription is not ready or not enough balance or allowance");
+        require( allowance >= s_licensePrice  && balance >= s_licensePrice , "Subscription is not ready or not enough balance or allowance");
         expirationTimestamp[tokenId] = block.timestamp + i_periodSecond;
 
         uint256 startingBalance = IERC20(i_tokenAddress).balanceOf(address(this));
@@ -135,11 +135,6 @@ contract AutoRenewSubscriptionLicense is ERC721,Ownable{
           "ERC20 Balance did not change correctly"
         );
 
-
-        if (s_gasPrice > 0) {
-            IERC20(i_tokenAddress).safeTransferFrom(ownerOf(tokenId), msg.sender, s_gasPrice);
-
-        }
         emit UpdatedSubscriptionToken(tokenId, s_licensePrice);
     }
 
@@ -278,7 +273,7 @@ contract AutoRenewSubscriptionLicense is ERC721,Ownable{
     
     function cancelSubscription(uint256 tokenId) public  {
         require(msg.sender == ownerOf(tokenId), "Only owner can cancel the subscription");
-        require(block.timestamp != uint256(0), "Subscription is already canceled");
+        require(expirationTimestamp[tokenId] != uint256(0), "Subscription is already canceled");
 
         expirationTimestamp[tokenId] = uint256(0);
     }
