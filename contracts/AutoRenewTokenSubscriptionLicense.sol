@@ -273,7 +273,7 @@ contract AutoRenewSubscriptionLicense is ERC721,Ownable{
     
     function cancelSubscription(uint256 tokenId) public  {
         require(msg.sender == ownerOf(tokenId), "Only owner can cancel the subscription");
-        require(block.timestamp != uint256(0), "Subscription is already canceled");
+        require(expirationTimestamp[tokenId] != uint256(0), "Subscription is already canceled");
 
         expirationTimestamp[tokenId] = uint256(0);
     }

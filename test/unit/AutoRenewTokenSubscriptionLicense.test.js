@@ -156,6 +156,132 @@ describe("AutoRenewSubscriptionLicense", async function () {
         })
     })
 
+    describe("cancel Subscription", async function () {
+        it("should allow canceling for the owner of the token", async () => {
+            const oneMinute = 60
+            const subscriptionPeriodSecond = 60 * 60 * 24 * 30
+            await ethers.provider.send("evm_increaseTime", [oneMinute])
+            await ethers.provider.send("evm_mine")
+
+            // Create a subscription token
+            const customerAddress = accounts[1].address
+            const subscriptionPrice =
+                await autoRenewSubscriptionLicense.getLicensePrice()
+            const tokenId = await autoRenewSubscriptionLicense.getTokenCounter()
+
+            const fromBalance = await mapCoin.balanceOf(customerAddress)
+            if (fromBalance.toNumber() <= 0) {
+                const transferAmount = "10000000"
+                const transactionResponse = await mapCoin.transfer(
+                    customerAddress,
+                    transferAmount
+                )
+                await transactionResponse.wait()
+            }
+
+            const approveAmount = "1000"
+            const mapCoinFrom = await ethers.getContract("MapCoin", accounts[1])
+            const transactionResponseApprove = await mapCoinFrom.approve(
+                autoRenewSubscriptionLicense.address,
+                approveAmount
+            )
+            await transactionResponseApprove.wait()
+
+            await autoRenewSubscriptionLicense.connect(accounts[1]).buyToken()
+            await autoRenewSubscriptionLicense
+                .connect(accounts[1])
+                .cancelSubscription(tokenId)
+
+            const subscriptionActive =
+                await autoRenewSubscriptionLicense.isSubscriptionActive(tokenId)
+            expect(subscriptionActive).to.be.false
+        })
+
+        it("should revert if non owner try to cancel the token", async () => {
+            const oneMinute = 60
+            const subscriptionPeriodSecond = 60 * 60 * 24 * 30
+            await ethers.provider.send("evm_increaseTime", [oneMinute])
+            await ethers.provider.send("evm_mine")
+
+            // Create a subscription token
+            const customerAddress = accounts[1].address
+            const subscriptionPrice =
+                await autoRenewSubscriptionLicense.getLicensePrice()
+            const tokenId = await autoRenewSubscriptionLicense.getTokenCounter()
+
+            const fromBalance = await mapCoin.balanceOf(customerAddress)
+            if (fromBalance.toNumber() <= 0) {
+                const transferAmount = "10000000"
+                const transactionResponse = await mapCoin.transfer(
+                    customerAddress,
+                    transferAmount
+                )
+                await transactionResponse.wait()
+            }
+
+            const approveAmount = "1000"
+            const mapCoinFrom = await ethers.getContract("MapCoin", accounts[1])
+            const transactionResponseApprove = await mapCoinFrom.approve(
+                autoRenewSubscriptionLicense.address,
+                approveAmount
+            )
+            await transactionResponseApprove.wait()
+
+            await autoRenewSubscriptionLicense.connect(accounts[1]).buyToken()
+            await expect(
+                autoRenewSubscriptionLicense
+                    .connect(accounts[0])
+                    .cancelSubscription(tokenId)
+            ).to.be.revertedWith("Only owner can cancel the subscription")
+        })
+
+        it("should revert if try to cancel already canceled token", async () => {
+            const oneMinute = 60
+            const subscriptionPeriodSecond = 60 * 60 * 24 * 30
+            await ethers.provider.send("evm_increaseTime", [oneMinute])
+            await ethers.provider.send("evm_mine")
+
+            // Create a subscription token
+            const customerAddress = accounts[1].address
+            const subscriptionPrice =
+                await autoRenewSubscriptionLicense.getLicensePrice()
+            const tokenId = await autoRenewSubscriptionLicense.getTokenCounter()
+
+            const fromBalance = await mapCoin.balanceOf(customerAddress)
+            if (fromBalance.toNumber() <= 0) {
+                const transferAmount = "10000000"
+                const transactionResponse = await mapCoin.transfer(
+                    customerAddress,
+                    transferAmount
+                )
+                await transactionResponse.wait()
+            }
+
+            const approveAmount = "1000"
+            const mapCoinFrom = await ethers.getContract("MapCoin", accounts[1])
+            const transactionResponseApprove = await mapCoinFrom.approve(
+                autoRenewSubscriptionLicense.address,
+                approveAmount
+            )
+            await transactionResponseApprove.wait()
+
+            await autoRenewSubscriptionLicense.connect(accounts[1]).buyToken()
+            await autoRenewSubscriptionLicense
+                .connect(accounts[1])
+                .cancelSubscription(tokenId)
+
+            const subscriptionActive =
+                await autoRenewSubscriptionLicense.isSubscriptionActive(tokenId)
+            expect(subscriptionActive).to.be.false
+
+            await expect(
+                autoRenewSubscriptionLicense
+                    .connect(accounts[1])
+                    .cancelSubscription(tokenId)
+            ).to.be.revertedWith("Subscription is already canceled")
+        })
+    })
+
     describe("updateSubscription", async function () {
         it("should return the current expiration time + period as expiration time for the given token after subscription updated before subscription ended", async () => {
             const oneMinute = 60
