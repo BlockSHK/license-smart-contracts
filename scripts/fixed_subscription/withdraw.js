@@ -2,34 +2,36 @@ const { ethers, getNamedAccounts } = require("hardhat")
 
 async function main() {
     const { deployer, secondPayer } = await getNamedAccounts()
-    const perpetualLicense = await ethers.getContract(
-        "PerpetualLicense",
+    const fixedSubscriptionLicense = await ethers.getContract(
+        "FixedSubscriptionLicense",
         secondPayer
     )
     console.log(secondPayer)
 
-    console.log(`Got contract Perpetual License at ${perpetualLicense.address}`)
+    console.log(
+        `Got contract Fixed Subscription License at ${fixedSubscriptionLicense.address}`
+    )
 
-    console.log("Buying a Petpetual License Token...")
+    console.log("Buying a Fixed Subscription License Token...")
 
-    const buyTokenResponse = await perpetualLicense.buyToken({
+    const buyTokenResponse = await fixedSubscriptionLicense.buyToken({
         value: ethers.utils.parseEther("0.01"),
     })
 
     await buyTokenResponse.wait()
     console.log("Bought a License Token!")
 
-    const perpetualLicenseOwner = await ethers.getContract(
-        "PerpetualLicense",
+    const fixedSubscriptionLicenseOwner = await ethers.getContract(
+        "FixedSubscriptionLicense",
         deployer
     )
     console.log(
-        `Got contract LicenseFactory at ${perpetualLicenseOwner.address}`
+        `Got contract fixed subscription at ${fixedSubscriptionLicenseOwner.address}`
     )
     console.log("Withdrawing from contract...")
     const balanceBefore = await ethers.provider.getBalance(deployer)
     console.log(ethers.utils.formatEther(balanceBefore))
-    const transactionResponse = await perpetualLicenseOwner.withdraw()
+    const transactionResponse = await fixedSubscriptionLicenseOwner.withdraw()
     await transactionResponse.wait()
     const balanceAfter = await ethers.provider.getBalance(deployer)
     console.log(ethers.utils.formatEther(balanceAfter))
