@@ -44,7 +44,11 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         process.env.ETHERSCAN_API_KEY
     ) {
         log("Verifying...")
-        await verify(autoRenewSubscriptionLicense.address, arguments)
+        await verify(
+            autoRenewSubscriptionLicense.address,
+            arguments,
+            "contracts/AutoRenewTokenSubscriptionLicense.sol:AutoRenewSubscriptionLicense"
+        )
     }
 }
 
