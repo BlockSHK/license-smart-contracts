@@ -95,6 +95,13 @@ describe("PerpetualLicense", async function () {
         })
     })
 
+    describe("getLicenseActivationContractAddress", async function () {
+        it("should return the correct License Activation Contract Address", async () => {
+            const licensePrice =
+                await perpetualLicense.getLicenseActivationContractAddress()
+            expect(licensePrice).to.equal(licenseActivation.address)
+        })
+    })
     describe("tokenURI", async function () {
         it("should return the token URI", async () => {
             const accounts = await ethers.getSigners()
