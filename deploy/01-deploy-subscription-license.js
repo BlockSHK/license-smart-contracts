@@ -33,14 +33,14 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         waitConfirmations: network.config.blockConfirmations || 1,
     })
 
-    // // Verify the deployment
-    // if (
-    //     !developmentChains.includes(network.name) &&
-    //     process.env.ETHERSCAN_API_KEY
-    // ) {
-    //     log("Verifying...")
-    //     await verify(mapLicense.address, arguments)
-    // }
+    // Verify the deployment
+    if (
+        !developmentChains.includes(network.name) &&
+        process.env.ETHERSCAN_API_KEY
+    ) {
+        log("Verifying...")
+        await verify(mapLicense.address, arguments)
+    }
 }
 
-module.exports.tags = ["subscriptionRecurrent", "notUsed"]
+module.exports.tags = ["all", "subscriptionRecurrent", "notUsed"]
