@@ -104,6 +104,10 @@ contract PerpetualLicense is ERC721Royalty, Ownable {
         return s_licensePrice ;
     }
 
+    function getLicenseActivationContractAddress() public view returns (address) {
+        return address(s_licenseActivationContract);
+    }
+
     function withdraw() public onlyOwner {
         uint256 amount = address(this).balance;
         (bool success, ) = payable(msg.sender).call{value: amount}("");
